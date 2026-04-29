@@ -1,0 +1,22 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--browser=chromium",
+    "--video=retain-on-failure",
+    "--screenshot=only-on-failure",
+    "--tracing=retain-on-failure",
+    "--alluredir=reports/allure-results",
+    "--html=reports/html/index.html",
+    "--self-contained-html",
+    "-n=auto",
+    "--reruns=2",
+    "--reruns-delay=1"
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "smoke: marks tests as smoke tests",
+    "regression: marks tests as regression tests"
+]
