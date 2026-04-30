@@ -6,7 +6,6 @@ from config.settings import settings
 
 PICKUP_LOCATION = "New York"
 DROPOFF_LOCATION_ALT = "Los Angeles"
-FILTER_LABEL = "Vehicle Type"
 
 
 @allure.epic("JP-1: Pre Payment Booking Flow")
@@ -93,6 +92,9 @@ class TestDateTimeSelection:
 
         with allure.step("Navigate to Joulez homepage"):
             booking.navigate()
+
+        with allure.step("Select pickup location to activate the date picker"):
+            booking.select_pickup_location(PICKUP_LOCATION)
 
         with allure.step("Open date/duration picker"):
             booking.open_date_picker()

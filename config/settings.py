@@ -9,6 +9,7 @@ class Settings:
     # Timeouts
     TIMEOUT = int(os.getenv("TIMEOUT", 30000))  # 30 seconds
     PAGE_LOAD_TIMEOUT = int(os.getenv("PAGE_LOAD_TIMEOUT", 60000))  # 60 seconds
+    SHORT_TIMEOUT = int(os.getenv("SHORT_TIMEOUT", 5000))  # 5 seconds — for fast UI responses
 
     # URLs
     BASE_URL = os.getenv("BASE_URL", "https://example.com")

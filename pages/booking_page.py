@@ -93,7 +93,7 @@ class BookingPage(BasePage):
     def _pick_suggestion(self, input_locator: Locator):
         """Click first .pac-item suggestion, or fall back to ArrowDown+Enter if none appear."""
         try:
-            self.location_suggestions.first.wait_for(state="visible", timeout=5000)
+            self.location_suggestions.first.wait_for(state="visible", timeout=settings.SHORT_TIMEOUT)
             self.location_suggestions.first.click()
         except Exception:
             input_locator.press("ArrowDown")
