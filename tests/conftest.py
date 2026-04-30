@@ -3,6 +3,14 @@ from playwright.sync_api import Page, Browser, BrowserContext
 from config.settings import settings
 
 @pytest.fixture(scope="session")
+def browser_type_launch_args(browser_type_launch_args):
+    """Pass headless setting from .env to the browser launcher."""
+    return {
+        **browser_type_launch_args,
+        "headless": settings.HEADLESS,
+    }
+
+@pytest.fixture(scope="session")
 def browser_context_args(browser_context_args):
     """Configure browser context for all tests."""
     return {
