@@ -157,25 +157,40 @@ Ensure the CSV is properly formatted with commas and appropriate quoting for tex
 
 ### ⏸ HITL CHECKPOINT 1 — Test Case Review
 
-**STOP. Present the derived test cases to the user.**
+**STOP. Present the derived test cases to the user and ask 3 separate questions, one at a time. Wait for a response before asking the next.**
 
+**Question 1 — Test case sign-off:**
 > "Here are the **<N> test cases** I derived from **$TICKET: $TICKET_SUMMARY**.
 >
 > <render the table>
 >
-> *(If the ticket was primarily a UI flow, add this prompt:)*
-> "Since this is a UI flow, I can run the UI tests while intercepting the network tab to capture the underlying API calls. I will then cross-reference them with our Swagger documentation to automatically generate robust API tests. Would you like me to include API test generation?"
->
-> *(If API test generation is in scope — either explicit API ticket or UI flow with interception — add this prompt:)*
-> "Would you also like me to export a **Postman-compatible collection** (`.json`) for these endpoints? It will be saved to `plans/` and can be imported directly into Postman or Insomnia for manual exploratory testing.
-> - **[Y] Yes** — export Postman collection after tests run
-> - **[N] No** — skip Postman export"
->
-> Store user's choice as `$EXPORT_POSTMAN` (true/false).
->
-> Shall I proceed to generate Playwright test scripts?"
+> Would you like to add, remove, or modify any cases before I proceed?"
 
-**Wait for explicit user approval before continuing.**
+**Wait for user response.** Apply any requested changes, then continue.
+
+---
+
+**Question 2 — API test generation** *(ask only if this is a UI flow ticket; skip if it is an explicit API ticket — API tests are already in scope):*
+> "Since this is a UI flow, I can intercept network calls during the UI test run to capture the underlying API calls, then cross-reference them with our Swagger docs to generate independent API tests.
+>
+> Would you like me to include API test generation?
+> - **[Y] Yes** — generate a separate API test file alongside the UI tests
+> - **[N] No** — UI tests only"
+
+**Wait for user response.** Store as `$INCLUDE_API_TESTS` (true/false).
+
+---
+
+**Question 3 — Postman collection export** *(ask only if `$INCLUDE_API_TESTS = true` OR if this is an explicit API ticket):*
+> "Would you also like me to export a **Postman-compatible collection** (`.json`) for these endpoints? It will be saved to `plans/` and uploaded directly to the Joulez Postman workspace.
+> - **[Y] Yes** — export and upload Postman collection after tests run
+> - **[N] No** — skip Postman export"
+
+**Wait for user response.** Store as `$EXPORT_POSTMAN` (true/false).
+
+---
+
+After all three questions are answered, proceed to Stage 4.
 
 ---
 
@@ -243,10 +258,34 @@ Verify discoverability:
 
 ---
 
+### ⏸ HITL CHECKPOINT 1b — Test Execution Scope
+
+**STOP. Before running any tests, ask the user what to execute.**
+
+List all generated test functions by name, then ask:
+
+> "I've generated **<N> test functions** in `tests/test_$TICKET_lower_$MODULE.py`:
+>
+> <list all test function names>
+>
+> How would you like to proceed?
+> - **[A] All** — run all <N> tests
+> - **[S] Selected** — tell me which tests to run (by name or number)
+> - **[K] Skip** — skip execution for now and go straight to commit"
+
+**Wait for user response.**
+- **All** → set `$TEST_FILTER = tests/test_$TICKET_lower_$MODULE.py`
+- **Selected** → set `$TEST_FILTER = -k "<user-specified names>"` within the test file
+- **Skip** → set `$SKIP_RUN = true`, jump directly to Stage 5b / Stage 6
+
+---
+
 ### Stage 5 — Run Tests
 
+**Skip this stage if `$SKIP_RUN = true`.**
+
 ```bash
-/opt/miniconda3/bin/python -m pytest tests/test_$TICKET_lower_$MODULE.py -v
+/opt/miniconda3/bin/python -m pytest $TEST_FILTER -v
 ```
 
 Parse and display:
