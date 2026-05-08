@@ -7,12 +7,13 @@ class Settings:
     """Application settings loaded from environment variables."""
 
     # Timeouts
-    TIMEOUT = int(os.getenv("TIMEOUT", 30000))  # 30 seconds
-    PAGE_LOAD_TIMEOUT = int(os.getenv("PAGE_LOAD_TIMEOUT", 60000))  # 60 seconds
-    SHORT_TIMEOUT = int(os.getenv("SHORT_TIMEOUT", 5000))  # 5 seconds — for fast UI responses
+    TIMEOUT = int(os.getenv("TIMEOUT", 30000))
+    PAGE_LOAD_TIMEOUT = int(os.getenv("PAGE_LOAD_TIMEOUT", 60000))
+    SHORT_TIMEOUT = int(os.getenv("SHORT_TIMEOUT", 5000))
 
     # URLs
-    BASE_URL = os.getenv("BASE_URL", "https://example.com")
+    BASE_URL = os.getenv("BASE_URL", "https://drivejoulez.com")
+    API_BASE_URL = os.getenv("API_BASE_URL", "https://beta.drivejoulez.com:8443/joulez-service")
 
     # Browser settings
     HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"

@@ -85,20 +85,37 @@ Every generated file should appear. If not, check the filename starts with `test
 
 > "Do you also want manual test cases documented for these scenarios? I can generate:
 > - **Happy path** cases (positive flows per test case)
-> - **Negative / error** cases (invalid inputs, missing fields, permission denials)
+> - **Negative / error** cases (invalid inputs, missing fields)
 > - **Edge cases** (boundary values, empty states, concurrent actions)
+> - **RBAC / Permission** cases (unauthorized access attempts)
 >
 > Which types would you like?"
 
-If yes, produce a markdown table per test case:
+If yes, produce the manual tests following QA best practices:
 
-| # | Type | Scenario | Steps | Expected Result |
-|---|------|----------|-------|-----------------|
-| 1 | Happy Path | Login with valid credentials | 1. Enter valid username/password 2. Click Login | Dashboard is displayed |
-| 2 | Negative | Login with wrong password | 1. Enter valid username, wrong password 2. Click Login | Error message "Invalid credentials" shown |
-| 3 | Edge Case | Login with empty fields | 1. Leave all fields blank 2. Click Login | Validation messages appear on each required field |
+| # | Type | Priority | Scenario | Pre-conditions | Test Data | Steps | Expected Result |
+|---|------|----------|----------|----------------|-----------|-------|-----------------|
+| 1 | Happy Path | High | Login with valid credentials | User exists | `valid_user` | 1. Enter credentials<br>2. Click Login | Dashboard is displayed |
+| 2 | Negative | Medium | Login with wrong password | User exists | `wrong_pwd` | 1. Enter credentials<br>2. Click Login | Error message "Invalid credentials" shown |
+| 3 | Edge Case | Low | Login with empty fields | None | Empty fields | 1. Leave fields blank<br>2. Click Login | Validation messages appear on each field |
+| 4 | RBAC | High | Viewer trying admin action | Logged in as Viewer | Valid data | 1. Go to Admin page | Access Denied message shown |
 
-Save to `plans/manual_tests_<module>_<date>.md` if the user wants to keep them.
+**Instructions for Test Case Quality:**
+- **Pre-conditions:** Clearly state the required system state before the test starts (e.g., "Navigate to https://...", specific user roles).
+- **Test Data:** Specify exact inputs needed to run the test.
+- **Extreme Granularity:** Do not summarize steps. Break down every flow into micro-interactions. Before interacting with an element, explicitly include a step to verify it is visible and accessible.
+- **1-to-1 Mapping:** The "Steps" and "Expected Result" columns must have a strict 1-to-1 mapping. Every single numbered step MUST have a corresponding numbered expected result (e.g., Step: "3. Click on Email field" -> Expected: "3. Email field is clicked and focused").
+
+Save the output to two formats:
+1. A Markdown file for easy reading:
+```
+plans/manual_tests_<module>_<date>.md
+```
+2. A CSV file (Excel compatible) for tracking and test management tools:
+```
+plans/manual_tests_<module>_<date>.csv
+```
+Ensure the CSV is properly formatted with commas and appropriate quoting for text fields.
 
 ---
 

@@ -79,6 +79,8 @@ ACs found: <N>
 
 ### Stage 2 — Create Git Branch
 
+> **Default branch is `main`.** Always branch from `main`, regardless of what `origin/HEAD` resolves to or what the current branch is.
+
 **`$BRANCH`** is constructed from the ticket at runtime:
 
 ```
@@ -96,37 +98,60 @@ Examples:
 - `SCRUM-42` + "Fix login timeout on slow networks" → `scrum-42-fix-login-timeout-on-slow-networks`
 - `PROJ-7` + "Add user permission management screen" → `proj-7-add-user-permission-management-screen`
 
+**Branch creation — always run these commands, every time the workflow is triggered:**
+
 ```bash
 git checkout main
 git pull origin main
 git checkout -b $BRANCH
 ```
 
-Confirm branch name to the user before proceeding.
+- **Never reuse an existing ticket branch.** If `$BRANCH` already exists locally or on remote, automatically append a version suffix (`-v2`, `-v3`, …) using the next available number — no prompt needed.
+- **Never ask the user** whether to reuse or create — always create a fresh branch.
+
+Confirm the final branch name to the user before proceeding.
 
 ---
 
 ### Stage 3 — Derive Manual Test Cases from Jira
 
 **Source**: `$TICKET_DESCRIPTION` and `$TICKET_ACS` — no Excel file involved.
+**Swagger API Reference**: `https://beta.drivejoulez.com:8443/joulez-service/swagger-ui.html#/`
+
+**API vs UI Analysis Strategy:**
+1. **Explicit API Ticket**: If the ticket talks directly about automating an API, derive API-specific test cases. During generation, refer directly to the Swagger URL for endpoints, payloads, and schemas.
+2. **UI Flow Ticket**: If the ticket talks about a UI task/flow, derive UI test cases. During generation, we will intercept the network tab to find the APIs being called, and then cross-reference those APIs with the Swagger doc to generate independent API tests alongside the UI tests.
 
 For each AC or requirement found, produce:
 
-| # | AC | Type | Scenario | Steps | Expected Result |
-|---|----|------|----------|-------|-----------------|
-| 1 | AC1 | Happy Path | … | 1. … 2. … | … |
-| 2 | AC1 | Negative | … | 1. … | Error shown |
-| 3 | AC2 | Edge Case | … | … | … |
+| # | AC | Type | Priority | Scenario | Pre-conditions | Test Data | Steps | Expected Result |
+|---|----|------|----------|----------|----------------|-----------|-------|-----------------|
+| 1 | AC1 | Happy Path | High | … | User logged in as Admin | Valid inputs | 1. …<br>2. … | Success toast appears |
+| 2 | AC1 | Negative | Medium | … | None | Invalid email | 1. … | Error "Invalid email" shown |
+| 3 | AC2 | RBAC | High | … | User is basic Viewer | Valid inputs | 1. … | Action button is disabled |
+
+**Instructions for Test Case Quality:**
+- **Pre-conditions:** Clearly state the required system state before the test starts (e.g., "Navigate to https://...", specific user roles).
+- **Test Data:** Specify exact inputs needed to run the test (e.g., `invalid-email`).
+- **Extreme Granularity:** Do not summarize steps. Break down every flow into micro-interactions. Before interacting with an element, explicitly include a step to verify it is visible and accessible.
+- **1-to-1 Mapping:** The "Steps" and "Expected Result" columns must have a strict 1-to-1 mapping. Every single numbered step MUST have a corresponding numbered expected result (e.g., Step: "3. Click on Email field" -> Expected: "3. Email field is clicked and focused").
 
 Generate at minimum:
-- One `Happy Path` per AC
+- One `Happy Path` per AC (High priority)
 - `Negative` cases where the AC implies error/validation handling
 - `Edge Case` where boundary values or empty states are implied
+- `RBAC/Permission` cases to ensure access controls block unauthorized actions
 
-Save to:
+Save the output to two formats:
+1. A Markdown file for easy reading:
 ```
 plans/manual_tests_$TICKET_lower_<YYYY-MM-DD>.md
 ```
+2. A CSV file (Excel compatible) for tracking and test management tools:
+```
+plans/manual_tests_$TICKET_lower_<YYYY-MM-DD>.csv
+```
+Ensure the CSV is properly formatted with commas and appropriate quoting for text fields.
 
 ---
 
@@ -138,14 +163,31 @@ plans/manual_tests_$TICKET_lower_<YYYY-MM-DD>.md
 >
 > <render the table>
 >
-> Shall I proceed to generate Playwright test scripts from these?
-> You can ask me to add, remove, or modify any cases before I generate."
+> *(If the ticket was primarily a UI flow, add this prompt:)*
+> "Since this is a UI flow, I can run the UI tests while intercepting the network tab to capture the underlying API calls. I will then cross-reference them with our Swagger documentation to automatically generate robust API tests. Would you like me to include API test generation?"
+>
+> *(If API test generation is in scope — either explicit API ticket or UI flow with interception — add this prompt:)*
+> "Would you also like me to export a **Postman-compatible collection** (`.json`) for these endpoints? It will be saved to `plans/` and can be imported directly into Postman or Insomnia for manual exploratory testing.
+> - **[Y] Yes** — export Postman collection after tests run
+> - **[N] No** — skip Postman export"
+>
+> Store user's choice as `$EXPORT_POSTMAN` (true/false).
+>
+> Shall I proceed to generate Playwright test scripts?"
 
 **Wait for explicit user approval before continuing.**
 
 ---
 
 ### Stage 4 — Generate Playwright Test Scripts
+
+**API Script Generation Instructions (if applicable):**
+- **Explicit API Ticket**: Write standard Playwright API tests using the `request` fixture (`APIRequestContext`). Read the Swagger docs to construct accurate payloads and assertions.
+- **UI Flow Ticket (Network Interception)**: 
+  1. In the UI test, intercept the network calls (e.g., `with page.expect_response("**/api/**") as response_info:`).
+  2. Extract the endpoint URLs, headers, and payloads called by the frontend.
+  3. Consult the Swagger API Reference to understand the full schema and error codes for those intercepted endpoints.
+  4. Scaffold a separate API test file (`tests/test_api_$TICKET_lower_$MODULE.py`) that tests the Happy, Negative, and RBAC scenarios directly against the backend.
 
 **Check for existing coverage first:**
 ```bash
@@ -196,7 +238,7 @@ Naming convention (from `agents/rules.md`):
 
 Verify discoverability:
 ```bash
-pytest --collect-only tests/test_$TICKET_lower_$MODULE.py
+/opt/miniconda3/bin/python -m pytest --collect-only tests/test_$TICKET_lower_$MODULE.py
 ```
 
 ---
@@ -204,8 +246,7 @@ pytest --collect-only tests/test_$TICKET_lower_$MODULE.py
 ### Stage 5 — Run Tests
 
 ```bash
-source venv/bin/activate
-pytest tests/test_$TICKET_lower_$MODULE.py -v
+/opt/miniconda3/bin/python -m pytest tests/test_$TICKET_lower_$MODULE.py -v
 ```
 
 Parse and display:
@@ -217,6 +258,79 @@ Open Allure report:
 ```bash
 allure serve reports/allure-results
 ```
+
+---
+
+### Stage 5b — Export Postman Collection (if `$EXPORT_POSTMAN = true`)
+
+**Skip this stage entirely if the user chose No at Checkpoint 1.**
+
+Build a Postman Collection v2.1 JSON file from the API endpoints identified in Stage 3/4.
+
+**Source of endpoints:**
+- **Explicit API ticket** — derive from Swagger docs at the Swagger API Reference URL
+- **UI flow ticket** — derive from network calls intercepted during Stage 5 test run, cross-referenced with Swagger for full schema
+
+**Collection structure:**
+```json
+{
+  "info": {
+    "name": "$TICKET — $TICKET_SUMMARY",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "<AC label> — <scenario name>",
+      "request": {
+        "method": "<GET|POST|PUT|DELETE>",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "<full endpoint URL>", ... },
+        "body": { "mode": "raw", "raw": "<example payload JSON>" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Response has expected fields', () => { ... });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Rules:**
+- One Postman request per test case (Happy Path, Negative, RBAC)
+- Group requests into folders by AC (e.g. `AC1 — Location`, `AC2 — Date & Time`)
+- Include example payloads from Swagger or intercepted requests
+- Add basic Postman test scripts for status code and key response fields
+- Use `{{base_url}}` as a Postman variable for the host so it's environment-agnostic
+
+**Output & Upload:**
+1. Save the file locally to:
+```
+plans/postman_$TICKET_lower_<YYYY-MM-DD>.json
+```
+2. Automatically upload it to Postman using `curl` (the API requires the JSON to be wrapped in a `{"collection": ...}` object):
+```bash
+# Wrap the generated collection in the required format
+jq '{collection: .}' plans/postman_$TICKET_lower_<YYYY-MM-DD>.json > plans/postman_payload.json
+
+# Upload to the Joulez workspace
+curl --silent --location 'https://api.getpostman.com/collections?workspace=bd9bcbaa-d3ab-48ba-9757-38a6a6404d54' \
+--header 'X-API-Key: PMAK-REDACTED-ROTATE-THIS-KEY' \
+--header 'Content-Type: application/json' \
+--data "@plans/postman_payload.json"
+
+# Clean up the temporary payload file
+rm plans/postman_payload.json
+```
+
+Confirm to the user: `"Postman collection exported locally and uploaded directly to the Joulez workspace in Postman!"`
 
 ---
 
@@ -252,6 +366,7 @@ Stage files:
 ```bash
 git add tests/test_$TICKET_lower_$MODULE.py
 git add plans/manual_tests_$TICKET_lower_*.md
+git add plans/postman_$TICKET_lower_*.json  # only if $EXPORT_POSTMAN = true
 # add any page objects created during this session
 ```
 
@@ -348,9 +463,10 @@ Stage               Status    Output
 ─────────────────── ──────── ──────────────────────────────────────
 Jira Fetch          ✅        $TICKET: <summary>
 Branch Created      ✅        $BRANCH
-Test Cases Derived  ✅        <N> cases → plans/manual_tests_*.md
+Test Cases Derived  ✅        <N> cases → plans/manual_tests_*.md & .csv
 Scripts Generated   ✅        tests/test_$TICKET_lower_$MODULE.py
 Test Run            ✅/⚠️     <N> passed / <M> failed
+Postman Export      ✅/⏭️     plans/postman_$TICKET_lower_<date>.json (or skipped)
 Commit + Push       ✅        <commit hash>
 PR Raised           ✅        <PR URL> (draft: yes/no)
 Jira Updated        ✅        Comment added to $TICKET
@@ -365,7 +481,7 @@ PR Review           ✅        APPROVE / REQUEST_CHANGES
 |-----------|--------|
 | Jira ticket not found | Stop — ask user to verify `$TICKET` |
 | `git remote` not set | Stop — ask user to configure remote origin |
-| Branch already exists | Ask: checkout existing branch or append `-v2` suffix |
+| Branch already exists | Auto-append next available version suffix (`-v2`, `-v3`, …) — never reuse, never prompt |
 | No ACs parseable from Jira | Show raw description, ask user to define test scope |
 | `$MODULE` cannot be inferred | Ask user: "Which module does this ticket belong to?" |
 | Page object missing for `$MODULE` | Run `write-page-object` skill first, then resume from Stage 4 |
