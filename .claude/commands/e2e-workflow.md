@@ -111,12 +111,44 @@ git checkout -b $BRANCH
 
 Confirm the final branch name to the user before proceeding.
 
+Immediately after branch creation, transition the Jira ticket to **In Progress**:
+```
+jira_transition_issue(issue_key=$TICKET, transition="In Progress")
+```
+Confirm: `"🔄 Jira ticket $TICKET transitioned → In Progress"`
+
 ---
 
 ### Stage 3 — Derive Manual Test Cases from Jira
 
 **Source**: `$TICKET_DESCRIPTION` and `$TICKET_ACS` — no Excel file involved.
 **Swagger API Reference**: `https://beta.drivejoulez.com:8443/joulez-service/swagger-ui.html#/`
+
+**Swagger Discovery Step — run this visibly before deriving test cases:**
+
+Fetch the Swagger spec and identify all endpoints relevant to this ticket's domain:
+```bash
+curl -s "https://beta.drivejoulez.com:8443/joulez-service/v2/api-docs" | \
+  python3 -c "
+import sys, json
+spec = json.load(sys.stdin)
+paths = spec.get('paths', {})
+for path, methods in paths.items():
+    for method in methods:
+        if method in ('get','post','put','delete','patch'):
+            print(f'{method.upper():6} {path}')
+"
+```
+
+Print the discovered endpoints to the user in a formatted block:
+```
+🔍 Swagger Discovery — endpoints matching this flow:
+  POST   /booking/create
+  GET    /cars/available
+  GET    /booking/{id}
+  (N endpoints found)
+```
+Store as `$SWAGGER_ENDPOINTS`. If the curl fails, note it and proceed using ticket context alone.
 
 **API vs UI Analysis Strategy:**
 1. **Explicit API Ticket**: If the ticket talks directly about automating an API, derive API-specific test cases. During generation, refer directly to the Swagger URL for endpoints, payloads, and schemas.
@@ -191,6 +223,33 @@ Ensure the CSV is properly formatted with commas and appropriate quoting for tex
 ---
 
 After all three questions are answered, proceed to Stage 4.
+
+---
+
+### Stage 3b — Test Naming Preview
+
+**Before writing any files**, derive the proposed test function names from the approved test cases and present them:
+
+> "Here are the **test function names** I'll generate:
+>
+> | # | Function Name | Type | AC |
+> |---|--------------|------|----|
+> | 1 | `test_pos_select_pickup_location` | Happy Path | AC1 |
+> | 2 | `test_err_invalid_pickup_location` | Negative | AC1 |
+> | 3 | `test_perm_guest_cannot_book` | RBAC | AC3 |
+> | … | … | … | … |
+>
+> Shall I proceed with these names, or would you like to rename any?"
+
+**Wait for user response.** Apply any renames, then proceed to Stage 4.
+
+Also capture coverage baseline now:
+```bash
+find tests/ -name "*.py" | xargs grep -l "def test_" | wc -l
+# and count total test functions
+grep -r "def test_" tests/ --include="*.py" | wc -l
+```
+Store as `$EXISTING_TEST_COUNT`.
 
 ---
 
@@ -285,13 +344,24 @@ List all generated test functions by name, then ask:
 **Skip this stage if `$SKIP_RUN = true`.**
 
 ```bash
-/opt/miniconda3/bin/python -m pytest $TEST_FILTER -v
+/opt/miniconda3/bin/python -m pytest $TEST_FILTER -v --reruns=1 --reruns-delay=2
 ```
+
+**Retry behaviour**: `--reruns=1` silently retries each failing test once before marking it failed. This filters out transient flakiness. Only tests that fail on both attempts are considered truly failed.
 
 Parse and display:
 - Total: passed / failed / skipped / errors
-- Failed test names with error summaries
+- Failed test names with error summaries (only after retry)
 - Time taken
+
+Collect failure artifacts for failed tests:
+```bash
+# List any screenshots captured
+find screenshots/ -newer reports/allure-results -name "*.png" 2>/dev/null
+# List any videos captured
+find videos/ -newer reports/allure-results -name "*.webm" -o -name "*.mp4" 2>/dev/null
+```
+Store artifact paths as `$FAILURE_SCREENSHOTS` and `$FAILURE_VIDEOS`.
 
 Open Allure report:
 ```bash
@@ -405,7 +475,9 @@ Stage files:
 ```bash
 git add tests/test_$TICKET_lower_$MODULE.py
 git add plans/manual_tests_$TICKET_lower_*.md
+git add plans/manual_tests_$TICKET_lower_*.csv
 git add plans/postman_$TICKET_lower_*.json  # only if $EXPORT_POSTMAN = true
+git add plans/run_summary_$TICKET_lower_*.md
 # add any page objects created during this session
 ```
 
@@ -432,11 +504,41 @@ git push -u origin $BRANCH
 ```
 
 **PR body** includes:
-- Summary from `$TICKET_DESCRIPTION`
-- Jira link: `https://innocito.atlassian.net/browse/$TICKET`
-- Test coverage table (ACs → test functions)
-- How to run locally
-- Standard checklist from `raise-pr.md`
+
+```markdown
+## 🎫 [$TICKET] $TICKET_SUMMARY
+> Jira: https://innocito.atlassian.net/browse/$TICKET
+
+## 📋 Test Coverage
+| AC | Test Function | Type | Status |
+|----|--------------|------|--------|
+| AC1 | `test_pos_...` | Happy Path | ✅ Passed |
+| AC1 | `test_err_...` | Negative | ✅ Passed |
+| AC2 | `test_perm_...` | RBAC | ⚠️ Failed |
+
+**Coverage delta: $EXISTING_TEST_COUNT → $EXISTING_TEST_COUNT + <N> tests (+<N> for $TICKET)**
+
+## 🧪 Test Results
+- ✅ Passed: <N>  ❌ Failed: <M>  ⏭️ Skipped: <K>
+- Run time: <T>s
+
+<if failures exist>
+## ⚠️ Failures
+| Test | Error Summary |
+|------|--------------|
+| `test_err_...` | AssertionError: expected 400 got 200 |
+
+**Artifacts:**
+<list $FAILURE_SCREENSHOTS paths>
+<list $FAILURE_VIDEOS paths>
+</if>
+
+## 🚀 Run Locally
+\`\`\`bash
+pip install -r requirements.txt
+python -m pytest tests/test_$TICKET_lower_$MODULE.py -v
+\`\`\`
+```
 
 ```
 mcp__github__create_pull_request(
@@ -456,14 +558,38 @@ Capture `$PR_NUMBER` from the response. Display PR URL to the user.
 
 ### Stage 8 — Update Jira Ticket
 
+Post a rich comment with full test evidence:
+
 ```
 jira_add_comment(
   issue_key=$TICKET,
-  body="✅ Automation PR raised: <PR URL>\n\nBranch: `$BRANCH`\nTests: <N> cases covering <M> ACs.\nStatus: <All passing | Draft — <N> failures>"
+  body="""
+✅ *Automation PR raised:* <PR URL>
+*Branch:* $BRANCH
+*Status:* <All passing ✅ | Draft — <N> failures ⚠️>
+
+----
+*Test Results*
+|| AC || Test Function || Type || Result ||
+| AC1 | test_pos_... | Happy Path | ✅ Passed |
+| AC1 | test_err_... | Negative | ✅ Passed |
+| AC2 | test_perm_... | RBAC | ⚠️ Failed |
+
+*Coverage:* $EXISTING_TEST_COUNT → $EXISTING_TEST_COUNT+<N> tests total (+<N> new)
+*Run time:* <T>s
+<if Postman exported>
+*Postman Collection:* Uploaded to Joulez workspace ✅
+</if>
+"""
 )
 ```
 
-Confirm to the user that Jira has been updated.
+Then transition the ticket to **In Review**:
+```
+jira_transition_issue(issue_key=$TICKET, transition="In Review")
+```
+
+Confirm to the user: `"✅ Jira $TICKET updated with test results and transitioned → In Review"`
 
 ---
 
@@ -492,25 +618,47 @@ After it completes, surface to the user:
 
 ## Final Status Summary
 
-```
-Ticket  : $TICKET — $TICKET_SUMMARY
-Branch  : $BRANCH
-Module  : $MODULE
-Repo    : $OWNER/$REPO
+Render and display the summary table, then **save it as a shareable artifact**:
 
-Stage               Status    Output
-─────────────────── ──────── ──────────────────────────────────────
-Jira Fetch          ✅        $TICKET: <summary>
-Branch Created      ✅        $BRANCH
-Test Cases Derived  ✅        <N> cases → plans/manual_tests_*.md & .csv
-Scripts Generated   ✅        tests/test_$TICKET_lower_$MODULE.py
-Test Run            ✅/⚠️     <N> passed / <M> failed
-Postman Export      ✅/⏭️     plans/postman_$TICKET_lower_<date>.json (or skipped)
-Commit + Push       ✅        <commit hash>
-PR Raised           ✅        <PR URL> (draft: yes/no)
-Jira Updated        ✅        Comment added to $TICKET
-PR Review           ✅        APPROVE / REQUEST_CHANGES
 ```
+plans/run_summary_$TICKET_lower_<YYYY-MM-DD>.md
+```
+
+Content to save:
+```markdown
+# Run Summary — $TICKET: $TICKET_SUMMARY
+Date    : <YYYY-MM-DD>
+Repo    : $OWNER/$REPO
+Branch  : $BRANCH
+PR      : <PR URL>
+Jira    : https://innocito.atlassian.net/browse/$TICKET
+
+## Stage Results
+| Stage | Status | Output |
+|-------|--------|--------|
+| Jira Fetch | ✅ | $TICKET: <summary> |
+| Branch Created | ✅ | $BRANCH |
+| Swagger Discovery | ✅ | <N> endpoints found |
+| Test Cases Derived | ✅ | <N> cases → plans/manual_tests_*.md & .csv |
+| Scripts Generated | ✅ | tests/test_$TICKET_lower_$MODULE.py |
+| Test Run | ✅/⚠️ | <N> passed / <M> failed |
+| Postman Export | ✅/⏭️ | plans/postman_*.json (or skipped) |
+| Commit + Push | ✅ | <commit hash> |
+| PR Raised | ✅ | <PR URL> (draft: yes/no) |
+| Jira Updated | ✅ | Transitioned → In Review |
+| PR Review | ✅ | APPROVE / REQUEST_CHANGES |
+
+## Coverage Delta
+Before: $EXISTING_TEST_COUNT tests | After: $EXISTING_TEST_COUNT+<N> tests | Added: +<N>
+
+## AC Coverage
+| AC | Tests | All Passing? |
+|----|-------|-------------|
+| AC1 | test_pos_..., test_err_... | ✅ |
+| AC2 | test_perm_... | ⚠️ 1 failing |
+```
+
+Confirm to the user: `"📄 Run summary saved to plans/run_summary_$TICKET_lower_<date>.md — ready to share!"`
 
 ---
 
