@@ -84,6 +84,13 @@ class BookingPage(BasePage):
         self.pickup_location_input.fill(location)
         self._pick_suggestion(self.pickup_location_input)
 
+    @allure.step("Type pickup location without selecting suggestion: {text}")
+    def type_pickup_location_no_select(self, text: str):
+        """Type into pickup input (key-by-key) but do not click a suggestion.
+        Caller asserts the resulting suggestion-list state (visible / empty)."""
+        self.pickup_location_input.click()
+        self.pickup_location_input.press_sequentially(text, delay=50)
+
     @allure.step("Select drop-off location: {location}")
     def select_dropoff_location(self, location: str):
         self.dropoff_location_input.click()
