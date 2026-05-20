@@ -77,14 +77,20 @@ Each command file in `.claude/commands/` contains the full workflow.
 
 ## MCP Servers
 
-Two MCP servers are active via `.mcp.json` (loaded automatically — `enableAllProjectMcpServers: true`):
+Four MCP servers are active via `.mcp.json` (loaded automatically — `enableAllProjectMcpServers: true`):
 
 | Server | Package | Commands that use it |
 |--------|---------|---------------------|
 | **GitHub** | `@modelcontextprotocol/server-github` | `/raise-pr`, `/review-pr`, `/github-mcp-operations` |
 | **Jira** | `mcp-atlassian` (via `uvx`) | `/jira-ticket`, `/e2e-workflow` |
+| **Playwright** | `@playwright/mcp` | Browser automation, interactive testing, debugging |
+| **Swagger** | `@ivotoby/openapi-mcp-server` | Joulez API integration, endpoint testing |
 
 **Jira MCP tools available**: `jira_get_issue`, `jira_search`, `jira_create_issue`, `jira_update_issue`, `jira_transition_issue`
+
+**Playwright MCP tools available**: 150+ browser automation tools including `browser_navigate`, `browser_click`, `browser_fill_form`, `browser_take_screenshot`, `browser_network_request`, `browser_evaluate`, and more
+
+**Swagger MCP tools available**: 250+ Joulez API endpoints including booking operations (`crt-booking-using-pst`, `cancel-booking-using-del`), user management (`get-usr-using-get`, `upd-usr-using-put`), payment processing, car inventory, and location services. Base URL: `https://beta.drivejoulez.com:8443/joulez-service/`
 
 **Configuration**: credentials are stored inline in `.mcp.json` (git-ignored). Restart Claude Code after any changes to `.mcp.json`.
 

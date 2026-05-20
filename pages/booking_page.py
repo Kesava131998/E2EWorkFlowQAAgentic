@@ -10,10 +10,11 @@ class BookingPage(BasePage):
     def __init__(self, page: Page):
         super().__init__(page)
 
-        # Location inputs (Google Places autocomplete)
+        # Location inputs (custom autocomplete - not standard Google Places)
         self.pickup_location_input: Locator = page.locator("input[placeholder='Location']")
         self.dropoff_location_input: Locator = page.locator("input[placeholder='Same as Pick Up']")
-        self.location_suggestions: Locator = page.locator(".pac-item")
+        # Custom dropdown uses listitem > paragraph structure (verified via Playwright MCP 2026-05-19)
+        self.location_suggestions: Locator = page.locator("listitem paragraph.fontSize13")
 
         # Duration / date picker — commonBgInput parent that holds the "Duration" span
         self.duration_section: Locator = page.locator(".commonBgInput").filter(has_text="Duration")
@@ -135,15 +136,14 @@ class BookingPage(BasePage):
 
     @allure.step("Select a calendar day by number: {day}")
     def select_calendar_day(self, day: int):
-        # Match enabled tiles only — exact text match avoids e.g. day 1 matching day 10/11
-        tile = self.calendar_day_tiles.filter(
-            has_text=str(day)
-        ).locator(f"text='{day}'").first
-        # Fallback: filter by exact abbr or title if has_text is too broad
-        if not tile.is_visible():
-            tile = self.calendar_day_tiles.filter(has_text=str(day)).first
-        tile.wait_for(state="visible", timeout=settings.TIMEOUT)
-        tile.click()
+        # Match enabled tiles from current month only (exclude neighboring month tiles)
+        # Filter out disabled and neighboring month tiles
+        current_month_tiles = self.calendar_day_tiles.locator(
+            f"button.react-calendar__tile:not(.react-calendar__month-view__days__day--neighboringMonth):has-text('{day}')"
+        )
+        # Wait for at least one matching tile
+        current_month_tiles.first.wait_for(state="visible", timeout=settings.TIMEOUT)
+        current_month_tiles.first.click()
 
     @allure.step("Check whether calendar is open")
     def is_calendar_open(self) -> bool:
