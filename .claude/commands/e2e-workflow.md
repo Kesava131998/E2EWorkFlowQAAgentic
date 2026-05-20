@@ -80,6 +80,8 @@ ACs found: <N>
 ### Stage 2 — Create Git Branch
 
 > **Default branch is `main`.** Always branch from `main`, regardless of what `origin/HEAD` resolves to or what the current branch is.
+>
+> 🚨 **HARD RULE: Never commit test files, page objects, or plans directly to `main`.** This stage MUST complete before any files are written in Stages 3–6. If you find yourself on `main` at any later stage, STOP and return here first.
 
 **`$BRANCH`** is constructed from the ticket at runtime:
 
@@ -104,12 +106,20 @@ Examples:
 git checkout main
 git pull origin main
 git checkout -b $BRANCH
+# Verify we are NOT on main before proceeding
+git branch --show-current
 ```
+
+The output of `git branch --show-current` MUST equal `$BRANCH`. If it still shows `main`, the branch creation failed — stop and report the error to the user.
 
 - **Never reuse an existing ticket branch.** If `$BRANCH` already exists locally or on remote, automatically append a version suffix (`-v2`, `-v3`, …) using the next available number — no prompt needed.
 - **Never ask the user** whether to reuse or create — always create a fresh branch.
 
-Confirm the final branch name to the user before proceeding.
+Confirm the final branch name to the user before proceeding:
+```
+✅ Branch created: $BRANCH
+   (branched from main — ready to generate test files)
+```
 
 Immediately after branch creation, transition the Jira ticket to **In Progress**:
 ```
@@ -464,6 +474,13 @@ If all tests passed → `$DRAFT = false`, proceed automatically.
 
 ### Stage 6 — Commit and Push
 
+**Branch guard — run before any `git add`:**
+```bash
+CURRENT_BRANCH=$(git branch --show-current)
+echo "Current branch: $CURRENT_BRANCH"
+```
+If `$CURRENT_BRANCH` is `main`: **🛑 STOP.** Do not commit. Return to Stage 2, create the feature branch, then move uncommitted changes there (`git stash` / `git checkout -b $BRANCH` / `git stash pop`) before proceeding. **Never commit or push directly to `main` — all changes must arrive via PR.**
+
 **Pre-commit checks** (from `agents/rules.md`) — block on any violation:
 - [ ] No `print()` statements in page objects or tests
 - [ ] No raw integer timeouts — must use `settings.*_TIMEOUT`
@@ -489,9 +506,13 @@ Covers <N> ACs from $TICKET: $TICKET_SUMMARY
 Refs: $TICKET
 ```
 
-Push:
+Push the **feature branch only** — never `main`:
 ```bash
+# ✅ Correct
 git push -u origin $BRANCH
+
+# 🚫 Never run this
+# git push origin main
 ```
 
 ---
