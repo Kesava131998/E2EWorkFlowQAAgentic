@@ -193,7 +193,17 @@ plans/manual_tests_$TICKET_lower_<YYYY-MM-DD>.md
 ```
 plans/manual_tests_$TICKET_lower_<YYYY-MM-DD>.csv
 ```
-Ensure the CSV is properly formatted with commas and appropriate quoting for text fields.
+
+**CSV format rules (industry standard):**
+
+- **Columns**: `TC#, AC, Type, Priority, Scenario, Pre-conditions, Test Data, Steps, Expected Result, Status, Automation Status, Test Layer, Defect ID`
+- **Split rows**: Each step gets its own row. The first row for a TC carries all metadata fields; subsequent step rows leave TC#, AC, Type, Priority, Scenario, Pre-conditions, Test Data, Automation Status, Test Layer, Defect ID **empty** — only Steps and Expected Result are filled.
+- **Default values**:
+  - `Status` → `Not Run`
+  - `Automation Status` → `Automated` (since we generate a test for every case)
+  - `Test Layer` → `UI` for Playwright browser tests, `API` for API tests
+  - `Defect ID` → empty (filled later if a test fails)
+- Properly quote any field containing commas.
 
 ---
 
@@ -354,8 +364,10 @@ List all generated test functions by name, then ask:
 **Skip this stage if `$SKIP_RUN = true`.**
 
 ```bash
-/opt/miniconda3/bin/python -m pytest $TEST_FILTER -v --reruns=1 --reruns-delay=2
+/opt/miniconda3/bin/python -m pytest $TEST_FILTER -v -p no:xdist --reruns=1 --reruns-delay=2
 ```
+
+**`-p no:xdist`**: disables parallel execution so tests run one at a time in a single browser window — clean for demos and review. (`pyproject.toml` sets `-n=auto` globally for CI; this flag overrides it for workflow runs only.)
 
 **Retry behaviour**: `--reruns=1` silently retries each failing test once before marking it failed. This filters out transient flakiness. Only tests that fail on both attempts are considered truly failed.
 
@@ -373,10 +385,38 @@ find videos/ -newer reports/allure-results -name "*.webm" -o -name "*.mp4" 2>/de
 ```
 Store artifact paths as `$FAILURE_SCREENSHOTS` and `$FAILURE_VIDEOS`.
 
-Open Allure report:
+---
+
+### ⏸ HITL CHECKPOINT — Allure Report
+
+**STOP. Ask once after tests complete:**
+
+> "Tests finished: ✅ **<N> passed** / ❌ **<M> failed** / ⏭️ **<K> skipped** in <T>s
+>
+> Would you like me to generate the **Allure report**?
+> *(Wipes any old report and builds a fresh consolidated view from this run)*
+>
+> - **[Y] Yes** — generate and open
+> - **[N] No** — skip, proceed to commit"
+
+**Wait for user response.**
+
+If **Yes**:
 ```bash
-allure serve reports/allure-results
+# Wipe any previous HTML report (keep allure-results — they were just written by this run)
+rm -rf reports/allure-html
+
+# Build consolidated HTML report from results collected during this run
+allure generate reports/allure-results --clean -o reports/allure-html
+
+# Serve over HTTP and auto-open browser
+# NEVER use `open index.html` — file:// blocks XHR → "500 Failed to fetch"
+allure open reports/allure-html
 ```
+
+Confirm: `"📊 Allure report ready — opening in browser"`
+
+If **No**: skip and proceed to Stage 5b / Stage 6.
 
 ---
 
