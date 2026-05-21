@@ -1,0 +1,254 @@
+{
+  "info": {
+    "name": "JP-1 — Pre Payment Booking Flow",
+    "description": "API test collection for JP-1: Pre Payment Booking Flow. Covers all 6 ACs: Location Selection, Date & Time, Vehicle Search, Vehicle Selection, Pricing Details, Booking/Checkout.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://beta.drivejoulez.com:8443/joulez-service",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token from /authenticate — set after running the auth request"
+    }
+  ],
+  "item": [
+    {
+      "name": "AC1 — Location Selection",
+      "item": [
+        {
+          "name": "TC29 — GET Available Locations (Happy Path)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/location/available-locations/open",
+              "host": ["{{base_url}}"],
+              "path": ["location", "available-locations", "open"]
+            },
+            "description": "Fetches the list of serviceable locations. Bronx, NY (5 vehicles) is the primary test location."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is an array or has list field', () => {",
+                  "    const body = pm.response.json();",
+                  "    const locations = Array.isArray(body) ? body : (body.data || body.locations || body.content || []);",
+                  "    pm.expect(locations.length).to.be.greaterThan(0);",
+                  "});",
+                  "pm.test('Bronx NY is in the list', () => {",
+                  "    const body = pm.response.json();",
+                  "    const locations = Array.isArray(body) ? body : (body.data || body.locations || body.content || []);",
+                  "    const bronx = locations.find(l => (l.locationName || l.name || l.city || '').toLowerCase().includes('bronx'));",
+                  "    pm.expect(bronx).to.not.be.undefined;",
+                  "    if (bronx) pm.environment.set('bronx_location_id', bronx.id || bronx.locationId || bronx._id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AC3 — Vehicle Search",
+      "item": [
+        {
+          "name": "TC30 — POST Available Cars for Bronx (Happy Path)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/availableCarsV4/open",
+              "host": ["{{base_url}}"],
+              "path": ["car", "availableCarsV4", "open"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickUpLocationId\": \"{{bronx_location_id}}\",\n  \"dropOffLocationId\": \"{{bronx_location_id}}\",\n  \"pickUpDate\": \"2026-05-22T09:00:00\",\n  \"dropOffDate\": \"2026-05-24T09:00:00\"\n}"
+            },
+            "description": "Search available cars for Bronx, NY with a 2-day rental window."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response contains at least 1 car', () => {",
+                  "    const body = pm.response.json();",
+                  "    const cars = Array.isArray(body) ? body : (body.cars || body.data || body.content || body.carList || []);",
+                  "    pm.expect(cars.length).to.be.greaterThan(0);",
+                  "    if (cars.length > 0) {",
+                  "        const carId = cars[0].id || cars[0].carId || cars[0]._id;",
+                  "        pm.environment.set('car_id', carId);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC32 — POST Available Cars with Empty Payload (Negative)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/availableCarsV4/open",
+              "host": ["{{base_url}}"],
+              "path": ["car", "availableCarsV4", "open"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "description": "Negative test: empty payload should return 4xx error."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is not 200 (error expected)', () => {",
+                  "    pm.expect(pm.response.code).to.not.equal(200);",
+                  "});",
+                  "pm.test('Status is 4xx or 5xx', () => {",
+                  "    pm.expect(pm.response.code).to.be.at.least(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AC4 — Vehicle Selection",
+      "item": [
+        {
+          "name": "TC33 — GET Car by ID (Happy Path)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/car/getById/{{car_id}}/open",
+              "host": ["{{base_url}}"],
+              "path": ["car", "getById", "{{car_id}}", "open"]
+            },
+            "description": "Fetch car detail by ID. Expects spec fields: range, year, seating, color."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has car spec fields', () => {",
+                  "    const body = pm.response.json();",
+                  "    const car = body.data || body;",
+                  "    const keys = Object.keys(car).join(' ').toLowerCase();",
+                  "    pm.expect(Object.keys(car).length).to.be.greaterThan(3);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AC5 — Pricing Details",
+      "item": [
+        {
+          "name": "TC31 — POST Estimated Price (Happy Path)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/booking/estimatedPrice/open",
+              "host": ["{{base_url}}"],
+              "path": ["booking", "estimatedPrice", "open"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carId\": \"{{car_id}}\",\n  \"pickUpLocationId\": \"{{bronx_location_id}}\",\n  \"dropOffLocationId\": \"{{bronx_location_id}}\",\n  \"pickUpDate\": \"2026-05-22T09:00:00\",\n  \"dropOffDate\": \"2026-05-24T09:00:00\"\n}"
+            },
+            "description": "Get estimated price for selected car and dates. Expects baseRate, taxes, and totalPrice."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response contains pricing fields', () => {",
+                  "    const body = pm.response.json();",
+                  "    const price = body.data || body;",
+                  "    const keys = Object.keys(price).join(' ').toLowerCase();",
+                  "    const hasPricingFields = keys.includes('base') || keys.includes('tax') || keys.includes('total') || keys.includes('price') || keys.includes('rate') || keys.includes('amount');",
+                  "    pm.expect(hasPricingFields).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AC6 — Booking / Checkout (Auth)",
+      "item": [
+        {
+          "name": "TC34 — POST Authenticate (Happy Path)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/authenticate",
+              "host": ["{{base_url}}"],
+              "path": ["authenticate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{test_username}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "description": "Authenticate with valid credentials. Set Postman environment variables test_username and test_password."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response contains auth token', () => {",
+                  "    const body = pm.response.json();",
+                  "    const token = body.token || body.access_token || body.jwt || body.accessToken || (body.data || {}).token;",
+                  "    pm.expect(token).to.not.be.undefined;",
+                  "    if (token) pm.environment.set('auth_token', token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

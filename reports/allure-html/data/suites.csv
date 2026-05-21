@@ -1,0 +1,21 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+Jira: JP-1
+AC: User can set the same or different drop-off location
+","16066","Select different drop-off location (Brooklyn, NY)","tests.ui","2026-05-20","passed","2026-05-20","","test_jp1_booking","",""
+"
+Jira: JP-1
+AC: Search returns results based on selected location — unserviceable locations return none
+","95069","Unserviceable location (Seattle, WA) produces no vehicle results","tests.ui","2026-05-20","passed","2026-05-20","","test_jp1_booking","",""
+"
+Jira: JP-1
+AC: User can set the same or different drop-off location
+","9921","Same location for pickup and drop-off (default behaviour)","tests.ui","2026-05-20","passed","2026-05-20","","test_jp1_booking","",""
+"
+Jira: JP-1
+AC: Delivery option is available for supported metro areas
+","3870","Delivery option element present on homepage (conditional UI)","tests.ui","2026-05-20","passed","2026-05-20","","test_jp1_booking","",""
+"
+Jira: JP-1
+AC: User can select a pickup location from the list of available service locations
+","10204","Select serviceable pickup location (Bronx, NY)","tests.ui","2026-05-20","passed","2026-05-20","","test_jp1_booking","",""
