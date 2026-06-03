@@ -1,6 +1,0 @@
-"BROKEN","EPIC","FAILED","FEATURE","PASSED","SKIPPED","STORY","UNKNOWN"
-"0","JP-1: Pre Payment Booking Flow","0","AC1 — Location Selection","1","0","AC1: User can set a different drop-off location","0"
-"0","JP-1: Pre Payment Booking Flow","0","AC1 — Location Selection","1","0","AC1: Unserviceable location does not return results","0"
-"0","JP-1: Pre Payment Booking Flow","0","AC1 — Location Selection","1","0","AC1: Same pickup and drop-off location is allowed","0"
-"0","JP-1: Pre Payment Booking Flow","0","AC1 — Location Selection","1","0","AC1: Delivery option is available for supported metro areas","0"
-"0","JP-1: Pre Payment Booking Flow","0","AC1 — Location Selection","1","0","AC1: User can select a pickup location from serviceable locations","0"
