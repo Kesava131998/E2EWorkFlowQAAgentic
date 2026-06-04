@@ -1,22 +1,15 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Ticket, GitBranch, Search, FileText, Settings, FlaskConical, Send, Package, GitPullRequest, CheckCircle, Eye, RotateCcw, MessageSquareDot } from 'lucide-react'
-import { STAGES, STAGE_STATUS } from '../constants/stages.js'
+import {
+  Ticket, GitBranch, Search, FileText, Settings, FlaskConical,
+  Send, Package, GitPullRequest, CheckCircle, Eye,
+  RotateCcw, MessageSquareDot,
+  Zap, AlertCircle, Wrench, Microscope,
+} from 'lucide-react'
+import { STAGES, SELF_HEAL_STAGES, STAGE_STATUS } from '../constants/stages.js'
 import { InnocitoLogo } from './Header.jsx'
 
-const CheckIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-  </svg>
-)
-
-const CrossIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
-    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-  </svg>
-)
-
-// ─── Stage-specific rich detail cards ─────────────────────────────────────────
+// ─── Shared primitives ────────────────────────────────────────────────────────
 
 function Chip({ children, color = 'gray' }) {
   const colors = {
@@ -52,7 +45,9 @@ function Row({ label, children }) {
   )
 }
 
-const STATUS_COLOR = { 'In Progress': 'amber', 'In Review': 'blue', 'Done': 'green', 'To Do': 'gray' }
+// ─── E2E workflow stage cards ─────────────────────────────────────────────────
+
+const STATUS_COLOR   = { 'In Progress': 'amber', 'In Review': 'blue', 'Done': 'green', 'To Do': 'gray' }
 const PRIORITY_COLOR = { 'High': 'red', 'Medium': 'amber', 'Low': 'gray' }
 const DECISION_COLOR = { 'APPROVE': 'green', 'REQUEST_CHANGES': 'red', 'COMMENT': 'amber' }
 
@@ -61,12 +56,12 @@ function JiraFetchCard({ d }) {
     <Card>
       <div className="flex items-center gap-1.5 flex-wrap">
         <Chip color="purple">{d.ticket}</Chip>
-        {d.status  && <Chip color={STATUS_COLOR[d.status]   || 'gray'}>{d.status}</Chip>}
+        {d.status   && <Chip color={STATUS_COLOR[d.status]     || 'gray'}>{d.status}</Chip>}
         {d.priority && <Chip color={PRIORITY_COLOR[d.priority] || 'gray'}>{d.priority}</Chip>}
       </div>
       {d.summary && <p className="text-[11px] text-gray-200 font-mono leading-snug">{d.summary}</p>}
       <div className="flex items-center justify-between text-[9px] font-mono text-gray-500">
-        {d.assignee && <span>👤 {d.assignee}</span>}
+        {d.assignee  && <span>👤 {d.assignee}</span>}
         {d.acs_found && <span>{d.acs_found} ACs</span>}
       </div>
     </Card>
@@ -192,7 +187,7 @@ function UpdateJiraCard({ d }) {
   return (
     <Card>
       <div className="flex items-center gap-1.5">
-        {d.ticket && <Chip color="purple">{d.ticket}</Chip>}
+        {d.ticket     && <Chip color="purple">{d.ticket}</Chip>}
         <span className="text-gray-600 text-[10px]">→</span>
         {d.transition && <Chip color={STATUS_COLOR[d.transition] || 'blue'}>{d.transition}</Chip>}
       </div>
@@ -206,12 +201,111 @@ function PrReviewCard({ d }) {
     <Card>
       <Chip color={DECISION_COLOR[decision] || 'gray'}>{decision || 'Reviewed'}</Chip>
       <div className="flex items-center gap-3 text-[9px] font-mono text-gray-500">
-        {d.issues_found != null  && <span>{d.issues_found} issues</span>}
-        {d.suggestions  != null  && <span>{d.suggestions} suggestions</span>}
+        {d.issues_found != null && <span>{d.issues_found} issues</span>}
+        {d.suggestions  != null && <span>{d.suggestions} suggestions</span>}
       </div>
     </Card>
   )
 }
+
+// ─── Self-heal stage cards ────────────────────────────────────────────────────
+
+function BaselineRunCard({ d }) {
+  return (
+    <Card>
+      <div className="flex items-center gap-2 font-mono">
+        <span className="text-emerald-400 text-[11px]">✓ {d.passed ?? '—'}</span>
+        <span className="text-gray-500 text-[11px]">/ {d.total ?? '—'} tests</span>
+        {d.duration_s && <span className="text-gray-600 text-[10px] ml-auto">{d.duration_s}s</span>}
+      </div>
+      <Chip color="green">All passing</Chip>
+    </Card>
+  )
+}
+
+function InjectDecayCard({ d }) {
+  return (
+    <Card>
+      <div className="space-y-1">
+        {(d.broken_locators || []).map((loc, i) => (
+          <div key={i} className="text-[10px] font-mono text-red-300 bg-red-950/30 rounded px-2 py-0.5 flex items-center gap-1.5">
+            <span className="text-red-500 font-bold">✗</span>
+            <span className="truncate">{loc}</span>
+          </div>
+        ))}
+        {!d.broken_locators?.length && (
+          <div className="text-[10px] font-mono text-red-300">Selectors invalidated</div>
+        )}
+      </div>
+      <Row label="file">
+        <span className="text-gray-500">{d.file || 'booking_page.py'}</span>
+      </Row>
+    </Card>
+  )
+}
+
+function DetectFailureCard({ d }) {
+  return (
+    <Card>
+      <div className="flex items-center gap-2 font-mono">
+        <span className="text-red-400   text-[11px]">✗ {d.failed  ?? '—'} failed</span>
+        <span className="text-emerald-400 text-[11px]">✓ {d.passed ?? '—'} passed</span>
+      </div>
+      {d.error_type && <Chip color="red">{d.error_type}</Chip>}
+    </Card>
+  )
+}
+
+function InspectDomCard({ d }) {
+  return (
+    <Card>
+      <div className="space-y-1">
+        {(d.selectors_found || []).map((sel, i) => (
+          <div key={i} className="text-[10px] font-mono text-blue-300 bg-blue-950/30 rounded px-2 py-0.5 flex items-center gap-1.5">
+            <span className="text-blue-500">→</span>
+            <span className="truncate">{sel}</span>
+          </div>
+        ))}
+        {!d.selectors_found?.length && (
+          <div className="text-[10px] font-mono text-blue-300">DOM inspected</div>
+        )}
+      </div>
+      {d.url && <p className="text-[9px] font-mono text-gray-500 truncate">{d.url}</p>}
+    </Card>
+  )
+}
+
+function ApplyHealCard({ d }) {
+  return (
+    <Card>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-mono text-purple-300">
+          {d.selectors_healed ?? '—'} selector{d.selectors_healed !== 1 ? 's' : ''} fixed
+        </span>
+        <Chip color="purple">🩹 healed</Chip>
+      </div>
+      {d.file && <Row label="file"><span className="text-gray-500">{d.file}</span></Row>}
+    </Card>
+  )
+}
+
+function VerifyHealCard({ d }) {
+  const allPassing = d.failed === 0 || d.failed === '0'
+  return (
+    <Card>
+      <div className="flex items-center gap-2 font-mono">
+        <span className="text-emerald-400 text-[11px]">✓ {d.passed ?? '—'}</span>
+        <span className="text-gray-500  text-[11px]">/ {d.total  ?? '—'} tests</span>
+        {d.duration_s && <span className="text-gray-600 text-[10px] ml-auto">{d.duration_s}s</span>}
+      </div>
+      <Chip color={allPassing ? 'green' : 'red'}>
+        {allPassing ? '✅ Heal confirmed' : `⚠ ${d.failed} still failing`}
+      </Chip>
+    </Card>
+  )
+}
+
+// ─── Card registries ──────────────────────────────────────────────────────────
 
 const STAGE_CARDS = {
   jira_fetch:        JiraFetchCard,
@@ -225,13 +319,43 @@ const STAGE_CARDS = {
   raise_pr:          RaisePrCard,
   update_jira:       UpdateJiraCard,
   pr_review:         PrReviewCard,
+  // self-heal
+  baseline_run:      BaselineRunCard,
+  inject_decay:      InjectDecayCard,
+  detect_failure:    DetectFailureCard,
+  inspect_dom:       InspectDomCard,
+  apply_heal:        ApplyHealCard,
+  verify_heal:       VerifyHealCard,
 }
 
-function StageProperties({ stage, events }) {
+const STAGE_ICONS = {
+  // e2e workflow
+  jira_fetch:        Ticket,
+  branch_create:     GitBranch,
+  swagger_discovery: Search,
+  test_cases:        FileText,
+  generate_tests:    Settings,
+  run_tests:         FlaskConical,
+  postman_export:    Send,
+  commit_push:       Package,
+  raise_pr:          GitPullRequest,
+  update_jira:       CheckCircle,
+  pr_review:         Eye,
+  // self-heal
+  baseline_run:      FlaskConical,
+  inject_decay:      Zap,
+  detect_failure:    AlertCircle,
+  inspect_dom:       Microscope,
+  apply_heal:        Wrench,
+  verify_heal:       CheckCircle,
+}
+
+// ─── Stage node internals ─────────────────────────────────────────────────────
+
+function StageProperties({ stage, events, isSelfHeal }) {
   const stageEvents = events.filter(e =>
     ['stage_start', 'stage_complete', 'stage_error'].includes(e.type) && e.stage === stage.id
   )
-  // Prefer stage_complete data over stage_start
   const completeEvent = [...stageEvents].reverse().find(e => e.type === 'stage_complete')
   const activeEvent   = completeEvent || [...stageEvents].reverse()[0]
 
@@ -241,6 +365,10 @@ function StageProperties({ stage, events }) {
   const RichCard = STAGE_CARDS[stage.id]
   const hasRichData = RichCard && Object.keys(d).some(k => k !== 'artifacts')
 
+  const barColor = isSelfHeal
+    ? 'bg-gradient-to-b from-purple-500/40 via-purple-400 to-purple-500/40'
+    : 'bg-gradient-to-b from-indigo-500/40 via-indigo-400 to-indigo-500/40'
+
   return (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
@@ -249,7 +377,7 @@ function StageProperties({ stage, events }) {
       className="overflow-hidden"
     >
       <div className="ml-[17px] pl-5 pb-2 pt-2.5 relative">
-        <div className="absolute top-0 left-0 bottom-0 w-[2px] bg-gradient-to-b from-indigo-500/40 via-indigo-400 to-indigo-500/40 animate-pulse" />
+        <div className={`absolute top-0 left-0 bottom-0 w-[2px] animate-pulse ${barColor}`} />
         {hasRichData
           ? <RichCard d={d} />
           : activeEvent.message && (
@@ -263,9 +391,12 @@ function StageProperties({ stage, events }) {
   )
 }
 
-function VerticalConnector({ leftStatus }) {
+function VerticalConnector({ leftStatus, isSelfHeal }) {
   const isComplete = leftStatus === STAGE_STATUS.COMPLETE
-  const isActive = leftStatus === STAGE_STATUS.ACTIVE
+  const isActive   = leftStatus === STAGE_STATUS.ACTIVE
+  const activeBar  = isSelfHeal
+    ? 'bg-gradient-to-b from-purple-500/40 via-purple-400 to-purple-500/40'
+    : 'bg-gradient-to-b from-indigo-500/40 via-indigo-400 to-indigo-500/40'
 
   return (
     <div className="flex flex-col items-start w-full">
@@ -279,10 +410,10 @@ function VerticalConnector({ leftStatus }) {
         )}
         {isActive && (
           <motion.div
-            className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-indigo-500/40 via-indigo-400 to-indigo-500/40 animate-pulse"
+            className={`absolute top-0 left-0 w-full h-full animate-pulse ${activeBar}`}
             initial={{ height: '0%' }}
             animate={{ height: '100%' }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
           />
         )}
       </div>
@@ -290,27 +421,16 @@ function VerticalConnector({ leftStatus }) {
   )
 }
 
-const STAGE_ICONS = {
-  jira_fetch: Ticket,
-  branch_create: GitBranch,
-  swagger_discovery: Search,
-  test_cases: FileText,
-  generate_tests: Settings,
-  run_tests: FlaskConical,
-  postman_export: Send,
-  commit_push: Package,
-  raise_pr: GitPullRequest,
-  update_jira: CheckCircle,
-  pr_review: Eye,
-}
-
-function VerticalStageNode({ stage, status, events }) {
-  const isActive = status === STAGE_STATUS.ACTIVE
+function VerticalStageNode({ stage, status, events, isSelfHeal }) {
+  const isActive   = status === STAGE_STATUS.ACTIVE
   const isComplete = status === STAGE_STATUS.COMPLETE
-  const isError = status === STAGE_STATUS.ERROR
+  const isError    = status === STAGE_STATUS.ERROR
+
+  const activeRing  = isSelfHeal ? 'ring-purple-400/50' : 'ring-white/50'
+  const activePulse = isSelfHeal ? 'border-purple-400/30' : 'border-white/20'
 
   const nodeClasses = isActive
-    ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.15)] ring-1 ring-white/50'
+    ? `bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.15)] ring-1 ${activeRing}`
     : isComplete
     ? 'bg-brand-success/10 text-brand-success ring-1 ring-brand-success/30'
     : isError
@@ -335,8 +455,8 @@ function VerticalStageNode({ stage, status, events }) {
           className={`relative w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all duration-500 ease-out shrink-0 ${nodeClasses}`}
         >
           {isActive && (
-            <motion.div 
-              className="absolute inset-0 rounded-full border border-white/20"
+            <motion.div
+              className={`absolute inset-0 rounded-full border ${activePulse}`}
               animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             />
@@ -353,7 +473,7 @@ function VerticalStageNode({ stage, status, events }) {
             </span>
           )}
         </motion.div>
-        
+
         <div className="flex flex-col">
           <span className={`text-[11px] font-medium tracking-wider uppercase transition-colors duration-500 ${labelClasses}`}>
             {stage.label}
@@ -363,18 +483,46 @@ function VerticalStageNode({ stage, status, events }) {
           </span>
         </div>
       </div>
-      
+
       <AnimatePresence>
-        {(isActive || isComplete || isError) && <StageProperties stage={stage} events={events} />}
+        {(isActive || isComplete || isError) && (
+          <StageProperties stage={stage} events={events} isSelfHeal={isSelfHeal} />
+        )}
       </AnimatePresence>
     </div>
   )
 }
 
-export function Pipeline({ stageStatuses, events, workflowActive, onReset, onTeamsNotify, connected }) {
-  const [confirming, setConfirming] = useState(false)
+// ─── Pipeline header variants ─────────────────────────────────────────────────
+
+function PipelineHeader({ workflowMode }) {
+  if (workflowMode === 'self_heal') {
+    return (
+      <div className="px-6 py-5 border-b border-white/5 shrink-0">
+        <InnocitoLogo />
+        <div className="mt-3 flex items-center gap-2 px-2.5 py-1.5 bg-purple-950/40 border border-purple-500/30 rounded-lg">
+          <span className="text-purple-400 text-sm">🩹</span>
+          <span className="text-[10px] font-mono text-purple-300 uppercase tracking-widest">Self-Heal Demo</span>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="px-6 py-5 border-b border-white/5 shrink-0">
+      <InnocitoLogo />
+    </div>
+  )
+}
+
+// ─── Pipeline root ────────────────────────────────────────────────────────────
+
+export function Pipeline({ stageStatuses, events, workflowActive, workflowMode = 'e2e', onReset, onTeamsNotify, connected }) {
+  const [confirming, setConfirming]   = useState(false)
   const [teamsSending, setTeamsSending] = useState(false)
-  const [teamsSent, setTeamsSent] = useState(false)
+  const [teamsSent, setTeamsSent]     = useState(false)
+
+  const isSelfHeal = workflowMode === 'self_heal'
+  const activeStages = isSelfHeal ? SELF_HEAL_STAGES : STAGES
 
   const handleTeams = async () => {
     setTeamsSending(true)
@@ -398,24 +546,30 @@ export function Pipeline({ stageStatuses, events, workflowActive, onReset, onTea
 
   return (
     <div className="w-72 shrink-0 border-r border-white/5 bg-[#111113] h-full flex flex-col z-20 shadow-xl overflow-hidden">
-      <div className="px-6 py-5 border-b border-white/5 shrink-0">
-        <InnocitoLogo />
-      </div>
+      <PipelineHeader workflowMode={workflowMode} />
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 custom-scrollbar">
         <div className="flex flex-col pb-4">
-          {STAGES.map((stage, i) => (
+          {activeStages.map((stage, i) => (
             <div key={stage.id} className="flex flex-col">
-              <VerticalStageNode stage={stage} status={stageStatuses[stage.id] || STAGE_STATUS.IDLE} events={events} />
-              {i < STAGES.length - 1 && (
-                <VerticalConnector leftStatus={stageStatuses[stage.id] || STAGE_STATUS.IDLE} />
+              <VerticalStageNode
+                stage={stage}
+                status={stageStatuses[stage.id] || STAGE_STATUS.IDLE}
+                events={events}
+                isSelfHeal={isSelfHeal}
+              />
+              {i < activeStages.length - 1 && (
+                <VerticalConnector
+                  leftStatus={stageStatuses[stage.id] || STAGE_STATUS.IDLE}
+                  isSelfHeal={isSelfHeal}
+                />
               )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Footer: connection status + Teams notify + reset */}
+      {/* Footer */}
       <div className="shrink-0 border-t border-white/5 px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 flex-1 min-w-0">

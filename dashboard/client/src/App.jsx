@@ -15,6 +15,7 @@ export default function App() {
     activeHitl,
     connected,
     workflowActive,
+    workflowMode,
     artifacts,
     respondToHitl,
     resetWorkflow,
@@ -30,6 +31,7 @@ export default function App() {
           stageStatuses={stageStatuses}
           events={events}
           workflowActive={workflowActive}
+          workflowMode={workflowMode}
           onReset={resetWorkflow}
           onTeamsNotify={sendTeamsUpdate}
           connected={connected}

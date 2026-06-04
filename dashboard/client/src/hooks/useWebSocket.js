@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { EXPECTED_ARTIFACTS } from '../constants/stages.js'
+import { EXPECTED_ARTIFACTS, SELF_HEAL_ARTIFACTS } from '../constants/stages.js'
 
 const WS_URL = 'ws://localhost:8765/ws'
 const API_URL = 'http://localhost:8765'
@@ -10,6 +10,7 @@ export function useWorkflowSocket() {
   const [activeHitl, setActiveHitl] = useState(null)
   const [connected, setConnected] = useState(false)
   const [workflowActive, setWorkflowActive] = useState(false)
+  const [workflowMode, setWorkflowMode] = useState('e2e') // 'e2e' | 'self_heal'
   const [artifacts, setArtifacts] = useState([])
   const wsRef = useRef(null)
   const reconnectTimer = useRef(null)
@@ -20,6 +21,7 @@ export function useWorkflowSocket() {
       setStageStatuses({})
       setActiveHitl(null)
       setWorkflowActive(false)
+      setWorkflowMode('e2e')
       setArtifacts([])
       return
     }
@@ -27,10 +29,12 @@ export function useWorkflowSocket() {
     setEvents(prev => [...prev, event])
 
     if (event.type === 'workflow_start') {
+      const mode = event.data?.mode || 'e2e'
       setWorkflowActive(true)
+      setWorkflowMode(mode)
       setStageStatuses({})
-      // Seed all expected artifacts as pending (path: null)
-      setArtifacts(EXPECTED_ARTIFACTS.map(a => ({ ...a, path: null })))
+      const seedArtifacts = mode === 'self_heal' ? SELF_HEAL_ARTIFACTS : EXPECTED_ARTIFACTS
+      setArtifacts(seedArtifacts.map(a => ({ ...a, path: null })))
     }
 
     if (event.type === 'workflow_complete') {
@@ -43,9 +47,8 @@ export function useWorkflowSocket() {
 
     if (event.type === 'stage_complete' && event.stage) {
       setStageStatuses(prev => ({ ...prev, [event.stage]: 'complete' }))
-      // Unlock artifacts emitted with this stage (fill in their real path)
       if (event.data?.artifacts?.length) {
-        const incoming = event.data.artifacts  // [{label, path, type}, ...]
+        const incoming = event.data.artifacts
         setArtifacts(prev => prev.map(a => {
           const match = incoming.find(r => r.label === a.label)
           return match ? { ...a, path: match.path } : a
@@ -120,5 +123,9 @@ export function useWorkflowSocket() {
     return res.json()
   }, [])
 
-  return { events, stageStatuses, activeHitl, connected, workflowActive, artifacts, respondToHitl, resetWorkflow, sendTeamsUpdate }
+  return {
+    events, stageStatuses, activeHitl, connected,
+    workflowActive, workflowMode, artifacts,
+    respondToHitl, resetWorkflow, sendTeamsUpdate,
+  }
 }

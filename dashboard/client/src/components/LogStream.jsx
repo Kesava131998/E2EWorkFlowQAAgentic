@@ -11,6 +11,46 @@ function LogEntry({ event }) {
   const color = LEVEL_COLORS[event.level] || 'text-gray-400'
   const prefix = LEVEL_PREFIXES[event.level] || '  '
 
+  // ── Self-heal: locator diff ─────────────────────────────────────────────
+  if (event.type === 'locator_diff') {
+    const { file, line, selector_name, broken, healed } = event.data || {}
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="my-3 rounded-lg overflow-hidden border border-purple-500/30 bg-purple-950/20 shadow-[0_0_18px_#a855f720]"
+      >
+        {/* Header bar */}
+        <div className="flex items-center justify-between px-3 py-1.5 bg-purple-900/30 border-b border-purple-500/20">
+          <div className="flex items-center gap-2">
+            <span className="text-purple-400 text-[10px] font-mono uppercase tracking-widest">Locator Healed</span>
+            {selector_name && (
+              <span className="text-[10px] font-mono text-purple-300 bg-purple-900/50 px-2 py-0.5 rounded border border-purple-700/50">
+                {selector_name}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-[9px] font-mono text-purple-500">
+            {file && <span>{file}{line ? `:${line}` : ''}</span>}
+            <span className="text-gray-500">{time}</span>
+          </div>
+        </div>
+        {/* Diff body */}
+        <div className="px-3 py-2 space-y-1 font-mono text-[12px]">
+          <div className="flex items-start gap-2 text-red-400 bg-red-950/30 rounded px-2 py-1">
+            <span className="text-red-500 font-bold select-none shrink-0">−</span>
+            <span className="break-all opacity-90">{broken || '(unknown)'}</span>
+          </div>
+          <div className="flex items-start gap-2 text-emerald-400 bg-emerald-950/30 rounded px-2 py-1">
+            <span className="text-emerald-500 font-bold select-none shrink-0">+</span>
+            <span className="break-all">{healed || '(unknown)'}</span>
+          </div>
+        </div>
+      </motion.div>
+    )
+  }
+
+  // ── HITL checkpoint ─────────────────────────────────────────────────────
   if (event.type === 'hitl_checkpoint') {
     return (
       <motion.div
@@ -73,14 +113,15 @@ function LogEntry({ event }) {
   }
 
   if (event.type === 'workflow_start') {
+    const isSelfHeal = event.data?.mode === 'self_heal'
     return (
       <motion.div
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
-        className="py-3 px-4 mb-3 bg-white/5 border border-white/10 rounded-lg"
+        className={`py-3 px-4 mb-3 border rounded-lg ${isSelfHeal ? 'bg-purple-950/30 border-purple-500/30' : 'bg-white/5 border-white/10'}`}
       >
-        <div className="text-gray-200 font-semibold text-sm">
-          Workflow Initiated
+        <div className={`font-semibold text-sm ${isSelfHeal ? 'text-purple-300' : 'text-gray-200'}`}>
+          {isSelfHeal ? '🩹 Self-Heal Demo Started' : 'Workflow Initiated'}
         </div>
         {event.data?.ticket && (
           <div className="text-gray-500 text-xs mt-1">Target: {event.data.ticket}</div>
@@ -98,7 +139,7 @@ function LogEntry({ event }) {
       >
         <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">✓</div>
         <div className="text-emerald-500 font-semibold text-sm">
-          Workflow Complete
+          {event.data?.mode === 'self_heal' ? '🩹 Self-Heal Complete — All Tests Passing' : 'Workflow Complete'}
         </div>
       </motion.div>
     )
@@ -120,7 +161,7 @@ function LogEntry({ event }) {
 
 function HitlLogGroup({ block }) {
   const { checkpoint, response } = block
-  
+
   const time = checkpoint.timestamp
     ? new Date(checkpoint.timestamp).toLocaleTimeString('en-US', { hour12: false, fractionalSecondDigits: 1 })
     : ''
@@ -168,11 +209,9 @@ function StageLogGroup({ block }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const startEvent = block.events[0]
   const isComplete = block.status === 'complete' || block.status === 'error'
-  
-  // Auto-collapse when complete
+
   useEffect(() => {
     if (isComplete) {
-      // Add a slight delay before collapsing so the user sees it finish
       const timer = setTimeout(() => setIsCollapsed(true), 500)
       return () => clearTimeout(timer)
     }
@@ -182,15 +221,20 @@ function StageLogGroup({ block }) {
     ? new Date(startEvent.timestamp).toLocaleTimeString('en-US', { hour12: false, fractionalSecondDigits: 1 })
     : ''
 
+  // Self-heal stages get a purple accent instead of indigo
+  const isSelfHeal = ['baseline_run','inject_decay','detect_failure','inspect_dom','apply_heal','verify_heal'].includes(startEvent.stage)
+  const accentClass = isSelfHeal ? 'text-purple-400' : 'text-indigo-400'
+  const dotClass    = isSelfHeal ? 'bg-purple-500'   : 'bg-indigo-500'
+
   return (
     <div className="my-2 border border-white/5 bg-white/[0.01] rounded-lg overflow-hidden">
-      <div 
+      <div
         className="py-2.5 px-3 flex items-center cursor-pointer hover:bg-white/[0.03] transition-colors select-none"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         <span className="text-gray-500 text-[11px] font-mono mr-3 shrink-0">{time}</span>
         <ChevronRight className={`w-4 h-4 mr-2 transition-transform duration-200 text-gray-500 shrink-0 ${isCollapsed ? '' : 'rotate-90'}`} />
-        <span className="text-indigo-400 font-semibold text-xs uppercase tracking-wide flex-1 truncate">
+        <span className={`font-semibold text-xs uppercase tracking-wide flex-1 truncate ${accentClass}`}>
           {startEvent.message || `Stage: ${startEvent.stage}`}
         </span>
         {isComplete && isCollapsed && (
@@ -230,7 +274,6 @@ export function LogStream({ events }) {
 
   const visibleEvents = events.filter(e => e.type !== 'reset')
 
-  // Group events by stage
   const blocks = []
   let currentBlock = null
 
@@ -257,6 +300,16 @@ export function LogStream({ events }) {
       return
     }
 
+    // locator_diff belongs to current stage group if one is open, else isolated
+    if (event.type === 'locator_diff') {
+      if (currentBlock?.type === 'stage_group') {
+        currentBlock.events.push(event)
+      } else {
+        blocks.push({ type: 'isolated', event })
+      }
+      return
+    }
+
     if (event.stage && !event.stage.startsWith('hitl_')) {
       if (event.type === 'stage_start') {
         currentBlock = { type: 'stage_group', stageId: event.stage, events: [event], status: 'active', id: event.id }
@@ -265,7 +318,7 @@ export function LogStream({ events }) {
         if (currentBlock && currentBlock.stageId === event.stage) {
           currentBlock.events.push(event)
           if (event.type === 'stage_complete') currentBlock.status = 'complete'
-          if (event.type === 'stage_error') currentBlock.status = 'error'
+          if (event.type === 'stage_error')    currentBlock.status = 'error'
         } else {
           blocks.push({ type: 'isolated', event })
         }
@@ -286,7 +339,7 @@ export function LogStream({ events }) {
         </div>
         <span className="text-[11px] text-gray-500 font-medium px-2 py-0.5 bg-white/5 rounded-full">{visibleEvents.length} events</span>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto px-4 py-4 relative z-20 custom-scrollbar">
         <AnimatePresence initial={false}>
           {blocks.length === 0 ? (

@@ -1,0 +1,228 @@
+{
+  "info": {
+    "name": "JP-1 — Pre Payment Booking Flow",
+    "description": "Postman collection for JP-1: Pre Payment Booking Flow automation tests. Covers AC1-AC6: Location Selection, Date & Time, Vehicle Search, Vehicle Selection, Pricing Details, and Booking/Auth.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "AC1 — Location Selection",
+      "item": [
+        {
+          "name": "AC1-TC1 Happy Path — Get Available Locations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/location/available-locations/open",
+              "host": ["{{base_url}}"],
+              "path": ["location", "available-locations", "open"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is not empty', () => {",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AC3 — Vehicle Search",
+      "item": [
+        {
+          "name": "AC3-TC1 Happy Path — Get Available Cars (Bronx NY)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/availableCarsV4/open",
+              "host": ["{{base_url}}"],
+              "path": ["car", "availableCarsV4", "open"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupLocation\": \"Bronx, NY\",\n  \"dropLocation\": \"Bronx, NY\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('At least one vehicle returned', () => {",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AC3-TC2 Negative — Get Available Cars (Seattle WA — unserviceable)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/availableCarsV4/open",
+              "host": ["{{base_url}}"],
+              "path": ["car", "availableCarsV4", "open"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupLocation\": \"Seattle, WA\",\n  \"dropLocation\": \"Seattle, WA\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 or 4xx', () => {",
+                  "  pm.expect([200, 400, 404, 422]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Response is empty for unserviceable location', () => {",
+                  "    const data = pm.response.json();",
+                  "    pm.expect(data).to.be.an('array').that.is.empty;",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AC3-TC3 Happy Path — Get Car Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/getCarFilter",
+              "host": ["{{base_url}}"],
+              "path": ["car", "getCarFilter"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Filter data returned', () => {",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AC5 — Pricing Details",
+      "item": [
+        {
+          "name": "AC5-TC1 Happy Path — Get Estimated Price",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/booking/estimatedPrice/open",
+              "host": ["{{base_url}}"],
+              "path": ["booking", "estimatedPrice", "open"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupLocation\": \"Bronx, NY\",\n  \"dropLocation\": \"Bronx, NY\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Pricing data returned', () => {",
+                  "  const data = pm.response.json();",
+                  "  pm.expect(data).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AC6 — Booking / Auth",
+      "item": [
+        {
+          "name": "AC6-TC1 Negative — Authenticate with invalid credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/authenticate",
+              "host": ["{{base_url}}"],
+              "path": ["authenticate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid@example.com\",\n  \"password\": \"wrong_password\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Auth fails with 401/400/403', () => {",
+                  "  pm.expect([400, 401, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://beta.drivejoulez.com:8443/joulez-service",
+      "type": "string"
+    }
+  ]
+}

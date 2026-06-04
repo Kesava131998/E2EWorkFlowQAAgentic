@@ -72,6 +72,7 @@ Each command file in `.claude/commands/` contains the full workflow.
 | `/jira-ticket` | `.claude/commands/jira-ticket.md` | Work from Jira ticket |
 | `/project-review` | `.claude/commands/project-review.md` | Full codebase audit |
 | `/debug-test` | `.claude/commands/debug-test.md` | Diagnose + fix failing test |
+| `/self-heal-demo` | `.claude/commands/self-heal-demo.md` | Live 6-stage self-heal demo — breaks + auto-heals booking_page.py locators |
 
 ---
 
