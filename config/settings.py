@@ -25,5 +25,7 @@ class Settings:
     # Reporting
     ALLURE_DIR = os.getenv("ALLURE_DIR", "reports/allure-results")
     HTML_REPORT_DIR = os.getenv("HTML_REPORT_DIR", "reports/html")
+    SCREENSHOT_DIR = os.getenv("SCREENSHOT_DIR", "reports/screenshots")
+    REPORTS_DIR = os.getenv("REPORTS_DIR", "reports")
 
 settings = Settings()

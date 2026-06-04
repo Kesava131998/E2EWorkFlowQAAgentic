@@ -12,6 +12,15 @@ export const STAGES = [
   { id: 'pr_review',          label: 'PR Review',      icon: '🔎', color: '#6366f1' },
 ]
 
+export const SELF_HEAL_STAGES = [
+  { id: 'baseline_run',   label: 'Baseline Run',   icon: '🟢', color: '#22c55e' },
+  { id: 'inject_decay',   label: 'Inject Decay',   icon: '💉', color: '#ef4444' },
+  { id: 'detect_failure', label: 'Detect Failure', icon: '🔥', color: '#f97316' },
+  { id: 'inspect_dom',    label: 'Inspect DOM',    icon: '🔬', color: '#3b82f6' },
+  { id: 'apply_heal',     label: 'Apply Fix',      icon: '🩹', color: '#a855f7' },
+  { id: 'verify_heal',    label: 'Verify Heal',    icon: '✅', color: '#10b981' },
+]
+
 export const STAGE_STATUS = {
   IDLE: 'idle',
   ACTIVE: 'active',
@@ -34,8 +43,7 @@ export const LEVEL_PREFIXES = {
   error:   '✗ ',
 }
 
-// All artifacts that the workflow may produce, in the order they appear.
-// path is null until the stage_complete event provides the real filename.
+// Artifacts for the standard e2e workflow
 export const EXPECTED_ARTIFACTS = [
   { label: 'Test Cases CSV',     type: 'csv',      stage: 'test_cases',     path: null },
   { label: 'Test Cases MD',      type: 'markdown', stage: 'test_cases',     path: null },
@@ -44,4 +52,10 @@ export const EXPECTED_ARTIFACTS = [
   { label: 'Allure Report',      type: 'report',   stage: 'run_tests',      path: null },
   { label: 'Postman Collection', type: 'json',     stage: 'postman_export', path: null },
   { label: 'Run Summary',        type: 'markdown', stage: 'pr_review',      path: null },
+]
+
+// Artifacts for the self-heal demo workflow
+export const SELF_HEAL_ARTIFACTS = [
+  { label: 'Regression Report', type: 'report',   stage: 'verify_heal', path: null },
+  { label: 'Heal Summary',      type: 'markdown', stage: 'verify_heal', path: null },
 ]

@@ -42,7 +42,8 @@ echo ""
 echo -e "  ${GREEN}API server${NC}  → http://localhost:8765"
 echo -e "  ${GREEN}Dashboard${NC}   → http://localhost:5173  (opens automatically)"
 echo ""
-echo -e "  Then run your workflow: ${CYAN}/e2e-workflow JP-1${NC}"
+echo -e "  Then run your workflow:    ${CYAN}/e2e-workflow JP-1${NC}"
+echo -e "  Or run the self-heal demo: ${CYAN}/self-heal-demo${NC}"
 echo ""
 
 # Start FastAPI in background
