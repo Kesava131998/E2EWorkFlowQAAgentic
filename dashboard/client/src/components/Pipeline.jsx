@@ -4,9 +4,9 @@ import {
   Ticket, GitBranch, Search, FileText, Settings, FlaskConical,
   Send, Package, GitPullRequest, CheckCircle, Eye,
   RotateCcw, MessageSquareDot,
-  Zap, AlertCircle, Wrench, Microscope,
+  Zap, AlertCircle, Wrench, Microscope, GitMerge, Minus,
 } from 'lucide-react'
-import { STAGES, SELF_HEAL_STAGES, STAGE_STATUS } from '../constants/stages.js'
+import { STAGES, SELF_HEAL_WEBHOOK_STAGES, SELF_HEAL_SKILL_STAGES, STAGE_STATUS } from '../constants/stages.js'
 import { InnocitoLogo } from './Header.jsx'
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -20,6 +20,7 @@ function Chip({ children, color = 'gray' }) {
     amber:   'bg-amber-900/40 text-amber-300 border-amber-700/50',
     purple:  'bg-purple-900/40 text-purple-300 border-purple-700/50',
     blue:    'bg-blue-900/40 text-blue-300 border-blue-700/50',
+    pink:    'bg-pink-900/40 text-pink-300 border-pink-700/50',
   }
   return (
     <span className={`text-[9px] font-mono border px-1.5 py-0.5 rounded ${colors[color] || colors.gray}`}>
@@ -210,41 +211,20 @@ function PrReviewCard({ d }) {
 
 // ─── Self-heal stage cards ────────────────────────────────────────────────────
 
-function BaselineRunCard({ d }) {
+function FetchPrDiffCard({ d }) {
   return (
     <Card>
-      <div className="flex items-center gap-2 font-mono">
-        <span className="text-emerald-400 text-[11px]">✓ {d.passed ?? '—'}</span>
-        <span className="text-gray-500 text-[11px]">/ {d.total ?? '—'} tests</span>
-        {d.duration_s && <span className="text-gray-600 text-[10px] ml-auto">{d.duration_s}s</span>}
-      </div>
-      <Chip color="green">All passing</Chip>
-    </Card>
-  )
-}
-
-function InjectDecayCard({ d }) {
-  return (
-    <Card>
-      <div className="space-y-1">
-        {(d.broken_locators || []).map((loc, i) => (
-          <div key={i} className="text-[10px] font-mono text-red-300 bg-red-950/30 rounded px-2 py-0.5 flex items-center gap-1.5">
-            <span className="text-red-500 font-bold">✗</span>
-            <span className="truncate">{loc}</span>
-          </div>
-        ))}
-        {!d.broken_locators?.length && (
-          <div className="text-[10px] font-mono text-red-300">Selectors invalidated</div>
-        )}
-      </div>
-      <Row label="file">
-        <span className="text-gray-500">{d.file || 'booking_page.py'}</span>
+      {d.pr_title && (
+        <div className="text-[10px] text-gray-400 truncate">{d.pr_title}</div>
+      )}
+      <Row label="files">
+        <span className="text-gray-400 font-mono">{d.files_changed ?? '—'} changed</span>
       </Row>
     </Card>
   )
 }
 
-function DetectFailureCard({ d }) {
+function RunRegressionCard({ d }) {
   return (
     <Card>
       <div className="flex items-center gap-2 font-mono">
@@ -252,6 +232,7 @@ function DetectFailureCard({ d }) {
         <span className="text-emerald-400 text-[11px]">✓ {d.passed ?? '—'} passed</span>
       </div>
       {d.error_type && <Chip color="red">{d.error_type}</Chip>}
+      {!d.error_type && d.failed > 0 && <Chip color="red">LocatorTimeoutError</Chip>}
     </Card>
   )
 }
@@ -305,6 +286,23 @@ function VerifyHealCard({ d }) {
   )
 }
 
+function RaiseHealPrCard({ d }) {
+  return (
+    <Card>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {d.pr_number && <Chip color="pink">{`PR #${d.pr_number}`}</Chip>}
+        <Chip color="green">heal committed ✓</Chip>
+      </div>
+      {d.branch && <Row label="branch"><span className="text-pink-300">{d.branch}</span></Row>}
+      {d.selectors_fixed != null && (
+        <Row label="fixed">
+          <span className="text-emerald-400">{d.selectors_fixed} selector{d.selectors_fixed !== 1 ? 's' : ''}</span>
+        </Row>
+      )}
+    </Card>
+  )
+}
+
 // ─── Card registries ──────────────────────────────────────────────────────────
 
 const STAGE_CARDS = {
@@ -319,13 +317,13 @@ const STAGE_CARDS = {
   raise_pr:          RaisePrCard,
   update_jira:       UpdateJiraCard,
   pr_review:         PrReviewCard,
-  // self-heal
-  baseline_run:      BaselineRunCard,
-  inject_decay:      InjectDecayCard,
-  detect_failure:    DetectFailureCard,
+  // self-heal (webhook + skill share the same card components)
+  fetch_pr_diff:     FetchPrDiffCard,
+  run_regression:    RunRegressionCard,
   inspect_dom:       InspectDomCard,
   apply_heal:        ApplyHealCard,
   verify_heal:       VerifyHealCard,
+  raise_heal_pr:     RaiseHealPrCard,
 }
 
 const STAGE_ICONS = {
@@ -341,13 +339,13 @@ const STAGE_ICONS = {
   raise_pr:          GitPullRequest,
   update_jira:       CheckCircle,
   pr_review:         Eye,
-  // self-heal
-  baseline_run:      FlaskConical,
-  inject_decay:      Zap,
-  detect_failure:    AlertCircle,
+  // self-heal (webhook + skill)
+  fetch_pr_diff:     GitPullRequest,
+  run_regression:    FlaskConical,
   inspect_dom:       Microscope,
   apply_heal:        Wrench,
   verify_heal:       CheckCircle,
+  raise_heal_pr:     GitMerge,
 }
 
 // ─── Stage node internals ─────────────────────────────────────────────────────
@@ -425,6 +423,7 @@ function VerticalStageNode({ stage, status, events, isSelfHeal }) {
   const isActive   = status === STAGE_STATUS.ACTIVE
   const isComplete = status === STAGE_STATUS.COMPLETE
   const isError    = status === STAGE_STATUS.ERROR
+  const isSkipped  = status === STAGE_STATUS.SKIPPED
 
   const activeRing  = isSelfHeal ? 'ring-purple-400/50' : 'ring-white/50'
   const activePulse = isSelfHeal ? 'border-purple-400/30' : 'border-white/20'
@@ -435,6 +434,8 @@ function VerticalStageNode({ stage, status, events, isSelfHeal }) {
     ? 'bg-brand-success/10 text-brand-success ring-1 ring-brand-success/30'
     : isError
     ? 'bg-brand-danger/10 text-brand-danger ring-1 ring-brand-danger/30'
+    : isSkipped
+    ? 'bg-[#111113] text-gray-700 ring-1 ring-white/[0.03]'
     : 'bg-[#111113] text-gray-600 ring-1 ring-white/5'
 
   const labelClasses = isActive
@@ -443,6 +444,8 @@ function VerticalStageNode({ stage, status, events, isSelfHeal }) {
     ? 'text-gray-400'
     : isError
     ? 'text-brand-danger'
+    : isSkipped
+    ? 'text-gray-700 line-through decoration-gray-800'
     : 'text-gray-600'
 
   const Icon = STAGE_ICONS[stage.id]
@@ -467,6 +470,8 @@ function VerticalStageNode({ stage, status, events, isSelfHeal }) {
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </motion.div>
+          ) : isSkipped ? (
+            <Minus className="w-3.5 h-3.5 opacity-30" />
           ) : (
             <span className={isActive || isComplete ? 'opacity-100' : 'opacity-50 grayscale'}>
               {Icon && <Icon className="w-4 h-4" />}
@@ -478,8 +483,8 @@ function VerticalStageNode({ stage, status, events, isSelfHeal }) {
           <span className={`text-[11px] font-medium tracking-wider uppercase transition-colors duration-500 ${labelClasses}`}>
             {stage.label}
           </span>
-          <span className="text-[8px] text-gray-500 tracking-widest uppercase mt-0.5">
-            {isActive ? 'In Progress' : isComplete ? 'Completed' : isError ? 'Failed' : 'Pending'}
+          <span className={`text-[8px] tracking-widest uppercase mt-0.5 ${isSkipped ? 'text-gray-700' : 'text-gray-500'}`}>
+            {isActive ? 'In Progress' : isComplete ? 'Completed' : isError ? 'Failed' : isSkipped ? 'No action needed' : 'Pending'}
           </span>
         </div>
       </div>
@@ -496,13 +501,17 @@ function VerticalStageNode({ stage, status, events, isSelfHeal }) {
 // ─── Pipeline header variants ─────────────────────────────────────────────────
 
 function PipelineHeader({ workflowMode }) {
-  if (workflowMode === 'self_heal') {
+  const isWebhook = workflowMode === 'self_heal_webhook'
+  const isSkill   = workflowMode === 'self_heal_skill'
+  if (isWebhook || isSkill) {
     return (
       <div className="px-6 py-5 border-b border-white/5 shrink-0">
         <InnocitoLogo />
         <div className="mt-3 flex items-center gap-2 px-2.5 py-1.5 bg-purple-950/40 border border-purple-500/30 rounded-lg">
           <span className="text-purple-400 text-sm">🩹</span>
-          <span className="text-[10px] font-mono text-purple-300 uppercase tracking-widest">Self-Heal Demo</span>
+          <span className="text-[10px] font-mono text-purple-300 uppercase tracking-widest">
+            {isWebhook ? 'Self-Heal · PR Webhook' : 'Self-Heal Demo'}
+          </span>
         </div>
       </div>
     )
@@ -521,8 +530,10 @@ export function Pipeline({ stageStatuses, events, workflowActive, workflowMode =
   const [teamsSending, setTeamsSending] = useState(false)
   const [teamsSent, setTeamsSent]     = useState(false)
 
-  const isSelfHeal = workflowMode === 'self_heal'
-  const activeStages = isSelfHeal ? SELF_HEAL_STAGES : STAGES
+  const isSelfHeal = workflowMode === 'self_heal_webhook' || workflowMode === 'self_heal_skill'
+  const activeStages = workflowMode === 'self_heal_webhook' ? SELF_HEAL_WEBHOOK_STAGES
+                     : workflowMode === 'self_heal_skill'   ? SELF_HEAL_SKILL_STAGES
+                     : STAGES
 
   const handleTeams = async () => {
     setTeamsSending(true)

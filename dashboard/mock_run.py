@@ -139,6 +139,22 @@ class Runner:
         send({"type": "log", "stage": stage, "message": msg, "level": level})
         self.sleep(0.18)
 
+    def ai(self, phase: str, content: str, stage: str = None,
+           model: str = "claude-sonnet-4-5", tokens: int = None, elapsed_ms: int = None):
+        """Emit an ai_activity event visible in the Claude pane."""
+        send({
+            "type": "ai_activity",
+            "stage": stage,
+            "data": {
+                "phase":      phase,
+                "content":    content,
+                "model":      model,
+                "tokens":     tokens,
+                "elapsed_ms": elapsed_ms,
+            },
+        })
+        self.sleep(0.1)
+
     def stage_start(self, stage_id: str, message: str, data: dict = None):
         send({"type": "stage_start", "stage": stage_id, "message": message, "level": "info", "data": data or {}})
         print(f"\n  ▶ {message}")
@@ -242,6 +258,36 @@ class Runner:
             self.log(f"Analysing {ac}...", stage="test_cases")
             self.sleep(0.7)
         self.sleep(0.5)
+
+        # Claude pane — show the derivation prompt
+        self.ai("prompt",
+            "You are a QA engineer. Given the following acceptance criteria for\n"
+            "JP-1 (Pre Payment Booking Flow), derive a comprehensive test case\n"
+            "matrix covering Happy Path, Negative, Edge Case, and RBAC scenarios.\n\n"
+            "AC1: User can search for a pickup location\n"
+            "AC2: User can select rental dates and duration\n"
+            "AC3: Search returns available EV vehicles\n"
+            "AC4: User can select and view a vehicle detail page\n"
+            "AC5: Pricing breakdown (base rate + taxes + total) is displayed\n"
+            "AC6: Unauthenticated users see an auth gate instead of Pay Now\n\n"
+            "Output a test case table with columns: ID, AC, Type, Function Name, Scenario.",
+            stage="test_cases", tokens=280
+        )
+        self.sleep(0.3)
+        self.ai("thinking", "Mapping ACs to test types…\nIdentifying boundary conditions and RBAC scenarios…",
+                stage="test_cases")
+        self.sleep(1.5)
+        self.ai("response",
+            f"Derived {len(TEST_CASES)} test cases across 6 ACs:\n"
+            "• 12 Happy Path  · 5 Negative  · 2 Edge Case  · 2 RBAC  · 6 API\n\n"
+            "Sample (AC1):\n"
+            "  TC1  test_pos_select_serviceable_pickup_location\n"
+            "  TC2  test_pos_select_different_dropoff_location\n"
+            "  TC4  test_err_unserviceable_location_no_results\n"
+            "  TC5  test_edge_same_pickup_dropoff_location",
+            stage="test_cases", tokens=195, elapsed_ms=1620
+        )
+
         self.log("Generating Happy Path, Negative, Edge, RBAC cases...", stage="test_cases")
         self.sleep(1.0)
         self.log(f"Derived {len(TEST_CASES)} test cases (21 UI + 6 API)", "success", stage="test_cases")
@@ -360,12 +406,39 @@ class Runner:
     def run_stage4_generate(self):
         self.stage_start("generate_tests", "Generating Playwright test scripts...")
         self.log("Creating tests/test_jp1_booking.py...", stage="generate_tests")
-        self.sleep(1.0)
+        self.sleep(0.8)
+
+        # Claude pane — code generation prompt
+        self.ai("prompt",
+            "Generate a Playwright (Python) test file for the following test cases.\n"
+            "Use the BookingPage page object model. Follow these conventions:\n"
+            "  · @allure.story / @allure.title decorators on each test\n"
+            "  · Prefix: test_pos_ (happy), test_err_ (negative), test_perm_ (RBAC)\n"
+            "  · Use settings.TIMEOUT, never raw integers\n\n"
+            "Test cases (AC1 scope, 5 tests):\n"
+            "  TC1  test_pos_select_serviceable_pickup_location\n"
+            "  TC2  test_pos_select_different_dropoff_location\n"
+            "  TC3  test_pos_delivery_option_available\n"
+            "  TC4  test_err_unserviceable_location_no_results\n"
+            "  TC5  test_edge_same_pickup_dropoff_location",
+            stage="generate_tests", tokens=248
+        )
+        self.sleep(0.3)
+        self.ai("thinking", "Mapping test cases to BookingPage methods…\nInferring assertions from acceptance criteria…",
+                stage="generate_tests")
 
         ui_tests = [t for t in TEST_CASES if not t["fn"].startswith("test_api")]
         for t in ui_tests:
             self.log(f"  + {t['fn']}  [{t['type']}]", stage="generate_tests")
             self.sleep(0.25)
+
+        self.sleep(0.4)
+        self.ai("response",
+            "Generated 21 UI test functions in tests/ui/test_jp1_booking.py\n"
+            "Generated 6 API test functions in tests/api/test_api_jp1_booking.py\n"
+            "All functions follow naming convention and @allure.step pattern ✓",
+            stage="generate_tests", tokens=62, elapsed_ms=3240
+        )
 
         self.sleep(0.5)
         self.log("Creating tests/test_api_jp1_booking.py...", stage="generate_tests")

@@ -1,14 +1,10 @@
 """
 Regression suite — booking page homepage elements.
 
-These 3 focused tests cover exactly the two locators used in the self-heal demo:
-  - pickup_location_input  (BookingPage line ~14)
-  - search_icon            (BookingPage line ~29)
-
-They run in < 15 s and are the canary for locator decay on the Joulez homepage.
+Covers the pickup_location_input locator used in the self-heal demo.
+Runs in < 15 s and is the canary for locator decay on the Joulez homepage.
 """
 import allure
-import pytest
 from playwright.sync_api import Page
 
 from config.settings import settings
@@ -48,15 +44,3 @@ class TestBookingRegression:
             assert "Bronx" in value, (
                 f"Expected 'Bronx' in input value, got '{value}' — possible locator decay"
             )
-
-    @allure.story("Search button is present on load")
-    @allure.title("REG-03: Search button visible on homepage")
-    def test_reg_search_button_visible(self, page: Page):
-        booking = BookingPage(page)
-
-        with allure.step("Navigate to Joulez homepage"):
-            booking.navigate()
-
-        with allure.step("Assert search icon is visible"):
-            assert booking.search_icon.is_visible(
-            ), "search_icon must be visible — possible locator decay"

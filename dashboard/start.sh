@@ -46,6 +46,10 @@ echo -e "  Then run your workflow:    ${CYAN}/e2e-workflow JP-1${NC}"
 echo -e "  Or run the self-heal demo: ${CYAN}/self-heal-demo${NC}"
 echo ""
 
+# Ensure ports are free before starting
+lsof -ti :8765 | xargs kill -9 2>/dev/null || true
+lsof -ti :5173 | xargs kill -9 2>/dev/null || true
+
 # Start FastAPI in background
 "$PY" "$SERVER_DIR/main.py" &
 SERVER_PID=$!

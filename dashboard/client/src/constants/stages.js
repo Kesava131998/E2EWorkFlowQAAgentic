@@ -12,13 +12,23 @@ export const STAGES = [
   { id: 'pr_review',          label: 'PR Review',      icon: '🔎', color: '#6366f1' },
 ]
 
-export const SELF_HEAL_STAGES = [
-  { id: 'baseline_run',   label: 'Baseline Run',   icon: '🟢', color: '#22c55e' },
-  { id: 'inject_decay',   label: 'Inject Decay',   icon: '💉', color: '#ef4444' },
-  { id: 'detect_failure', label: 'Detect Failure', icon: '🔥', color: '#f97316' },
-  { id: 'inspect_dom',    label: 'Inspect DOM',    icon: '🔬', color: '#3b82f6' },
-  { id: 'apply_heal',     label: 'Apply Fix',      icon: '🩹', color: '#a855f7' },
-  { id: 'verify_heal',    label: 'Verify Heal',    icon: '✅', color: '#10b981' },
+// Webhook flow: GitHub PR detected → regression fails on PR branch → heal
+export const SELF_HEAL_WEBHOOK_STAGES = [
+  { id: 'fetch_pr_diff',  label: 'Fetch PR Diff',   icon: '🔀', color: '#ef4444' },
+  { id: 'run_regression', label: 'Run Regression',  icon: '🧪', color: '#f97316' },
+  { id: 'inspect_dom',    label: 'Inspect DOM',     icon: '🔬', color: '#3b82f6' },
+  { id: 'apply_heal',     label: 'Claude Heals',    icon: '🩹', color: '#a855f7' },
+  { id: 'verify_heal',    label: 'Verify Heal',     icon: '✅', color: '#10b981' },
+  { id: 'raise_heal_pr',  label: 'Raise Heal PR',   icon: '🔀', color: '#ec4899' },
+]
+
+// Skill / mock flow: existing tests failing on production → agent heals
+export const SELF_HEAL_SKILL_STAGES = [
+  { id: 'run_regression', label: 'Run Regression',  icon: '🧪', color: '#f97316' },
+  { id: 'inspect_dom',    label: 'Inspect DOM',     icon: '🔬', color: '#3b82f6' },
+  { id: 'apply_heal',     label: 'Claude Heals',    icon: '🩹', color: '#a855f7' },
+  { id: 'verify_heal',    label: 'Verify Heal',     icon: '✅', color: '#10b981' },
+  { id: 'raise_heal_pr',  label: 'Raise Heal PR',   icon: '🔀', color: '#ec4899' },
 ]
 
 export const STAGE_STATUS = {
@@ -56,6 +66,7 @@ export const EXPECTED_ARTIFACTS = [
 
 // Artifacts for the self-heal demo workflow
 export const SELF_HEAL_ARTIFACTS = [
-  { label: 'Regression Report', type: 'report',   stage: 'verify_heal', path: null },
-  { label: 'Heal Summary',      type: 'markdown', stage: 'verify_heal', path: null },
+  { label: 'Regression Report', type: 'report',   stage: 'verify_heal',   path: null },
+  { label: 'Heal Patch',        type: 'python',   stage: 'apply_heal',    path: null },
+  { label: 'Heal Summary',      type: 'markdown', stage: 'raise_heal_pr', path: null },
 ]

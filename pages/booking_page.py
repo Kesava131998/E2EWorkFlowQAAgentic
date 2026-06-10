@@ -14,7 +14,7 @@ class BookingPage(BasePage):
         self.pickup_location_input: Locator = page.locator("input[placeholder='Location']")
         self.dropoff_location_input: Locator = page.locator("input[placeholder='Same as Pick Up']")
         # Custom dropdown uses listitem > paragraph structure (verified via Playwright MCP 2026-05-19)
-        self.location_suggestions: Locator = page.locator("listitem paragraph.fontSize13")
+        self.location_suggestions: Locator = page.locator(".pac-item")
 
         # Duration / date picker — commonBgInput parent that holds the "Duration" span
         self.duration_section: Locator = page.locator(".commonBgInput").filter(has_text="Duration")
@@ -26,7 +26,7 @@ class BookingPage(BasePage):
         )
 
         # Search
-        self.search_icon: Locator = page.locator(".searchIconContainer")
+        self.search_icon: Locator = page.locator(".searchBtn")
         self.search_button_mobile: Locator = page.locator(".searchButton")
 
         # Vehicle result cards (on /cars-list)
@@ -74,8 +74,7 @@ class BookingPage(BasePage):
 
     @allure.step("Navigate to Joulez homepage")
     def navigate(self):
-        self.page.goto(settings.BASE_URL, timeout=settings.PAGE_LOAD_TIMEOUT, wait_until="domcontentloaded")
-        self.page.wait_for_load_state("networkidle", timeout=settings.PAGE_LOAD_TIMEOUT)
+        self.page.goto(settings.BASE_URL, timeout=settings.PAGE_LOAD_TIMEOUT, wait_until="load")
 
     # ── Location ─────────────────────────────────────────────────────────
 

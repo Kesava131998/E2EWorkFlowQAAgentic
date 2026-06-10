@@ -1,5 +1,7 @@
 import asyncio
 import os
+import subprocess
+import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -7,7 +9,7 @@ from typing import Any
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import BackgroundTasks, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -141,6 +143,14 @@ async def hitl_wait(checkpoint_id: str, timeout: float = 300):
 
 @app.delete("/reset")
 async def reset():
+    global _active_run
+    if _active_run is not None and _active_run.returncode is None:
+        try:
+            _active_run.terminate()
+        except Exception as e:
+            print(f"[Reset] Failed to terminate active run: {e}")
+        _active_run = None
+
     event_log.clear()
     hitl_responses.clear()
     await broadcast({"type": "reset", "id": str(uuid.uuid4()), "timestamp": datetime.utcnow().isoformat()})
@@ -346,6 +356,137 @@ async def teams_notify():
 
     title = payload["attachments"][0]["content"]["body"][0]["columns"][0]["items"][1]["text"]
     return {"ok": True, "message": f"Teams card sent for: {title}"}
+
+
+# ── Workflow trigger endpoints ─────────────────────────────────────────────────
+
+# Track the currently running subprocess so we don't fire two at once
+_active_run: asyncio.subprocess.Process | None = None
+
+
+async def _spawn_runner(script_path: str, extra_args: list[str] = None):
+    """Run a dashboard mock-runner script as a background subprocess.
+
+    The runner itself posts events to /event, so we don't need to capture its
+    stdout — we just let it stream into the WebSocket pipeline naturally.
+    """
+    global _active_run
+    cmd = [sys.executable, script_path] + (extra_args or [])
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+            cwd=str(PROJECT_ROOT),
+        )
+        _active_run = proc
+        await proc.wait()
+    except Exception as exc:
+        print(f"[runner] error: {exc}", file=sys.stderr)
+    finally:
+        _active_run = None
+
+
+@app.post("/run/e2e")
+async def trigger_e2e(background_tasks: BackgroundTasks):
+    """Launch the E2E workflow mock runner from the dashboard UI."""
+    global _active_run
+    if _active_run is not None and _active_run.returncode is None:
+        raise HTTPException(status_code=409, detail="A workflow is already running")
+    script = str(PROJECT_ROOT / "dashboard" / "mock_run.py")
+    if not Path(script).exists():
+        raise HTTPException(status_code=404, detail=f"Runner not found: {script}")
+    background_tasks.add_task(_spawn_runner, script)
+    return {"ok": True, "mode": "e2e", "script": "dashboard/mock_run.py"}
+
+
+class SelfHealRequest(BaseModel):
+    pr_number: str | None = None
+    pr_title:  str | None = None
+    pr_branch: str | None = None
+    pr_url:    str | None = None
+
+
+@app.post("/run/self-heal")
+async def trigger_self_heal(background_tasks: BackgroundTasks, body: SelfHealRequest = None):
+    """Launch self-heal.
+
+    - No PR data (Mock Run button): spawns self_heal_run.py (scripted demo)
+    - PR data present (webhook modal): spawns self_heal_agent.py standalone (100% real)
+    """
+    global _active_run
+    if _active_run is not None and _active_run.returncode is None:
+        raise HTTPException(status_code=409, detail="A workflow is already running")
+
+    if body and body.pr_number:
+        # Webhook-sourced run — use the real agent (no mocks)
+        script = str(PROJECT_ROOT / "scripts" / "self_heal_agent.py")
+        if not Path(script).exists():
+            raise HTTPException(status_code=404, detail="self_heal_agent.py not found")
+        extra_args = ["--pr-number", body.pr_number]
+        if body.pr_branch: extra_args += ["--pr-branch", body.pr_branch]
+        if body.pr_title:  extra_args += ["--pr-title",  body.pr_title]
+        if body.pr_url:    extra_args += ["--pr-url",    body.pr_url]
+        background_tasks.add_task(_spawn_runner, script, extra_args)
+        return {"ok": True, "mode": "self_heal", "runner": "real"}
+    else:
+        # Mock Run button — scripted visualisation
+        script = str(PROJECT_ROOT / "dashboard" / "self_heal_run.py")
+        if not Path(script).exists():
+            raise HTTPException(status_code=404, detail="self_heal_run.py not found")
+        background_tasks.add_task(_spawn_runner, script)
+        return {"ok": True, "mode": "self_heal", "runner": "mock"}
+
+
+from fastapi import Request
+
+
+@app.post("/webhook/github")
+async def github_webhook(request: Request):
+    """Receive a GitHub PR webhook and broadcast a pr_detected event to the dashboard.
+
+    The dashboard will show a modal. The user confirms → the frontend calls
+    POST /run/self-heal with the PR data, spawning the mock runner.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"ok": False, "error": "Invalid JSON"}
+
+    pr_action = payload.get("action")
+    if "pull_request" not in payload or pr_action not in ("opened", "synchronize", "reopened"):
+        return {"ok": True, "message": "Ignored — not a relevant PR event"}
+
+    pr = payload.get("pull_request", {})
+    pr_number = str(pr.get("number", ""))
+    pr_title  = pr.get("title", "Unknown PR")
+    pr_url    = pr.get("html_url", "")
+    pr_branch = pr.get("head", {}).get("ref", "unknown-branch")
+
+    print(f"[Webhook] PR #{pr_number} ({pr_action}): {pr_title}")
+
+    await broadcast({
+        "id":        str(uuid.uuid4()),
+        "type":      "pr_detected",
+        "timestamp": datetime.utcnow().isoformat(),
+        "message":   f"PR #{pr_number}: {pr_title}",
+        "level":     "warning",
+        "data": {
+            "pr_number": pr_number,
+            "pr_title":  pr_title,
+            "pr_branch": pr_branch,
+            "pr_url":    pr_url,
+        },
+    })
+
+    return {"ok": True, "message": f"PR #{pr_number} event broadcast to dashboard"}
+
+@app.get("/run/status")
+async def run_status():
+    """Check whether a workflow runner subprocess is currently active."""
+    global _active_run
+    running = _active_run is not None and _active_run.returncode is None
+    return {"running": running}
 
 
 if __name__ == "__main__":

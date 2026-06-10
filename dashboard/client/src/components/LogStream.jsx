@@ -113,7 +113,11 @@ function LogEntry({ event }) {
   }
 
   if (event.type === 'workflow_start') {
-    const isSelfHeal = event.data?.mode === 'self_heal'
+    const mode = event.data?.mode || 'e2e'
+    const isSelfHeal = mode === 'self_heal_webhook' || mode === 'self_heal_skill'
+    const label = mode === 'self_heal_webhook' ? '🩹 Self-Heal · PR Webhook Started'
+                : mode === 'self_heal_skill'   ? '🩹 Self-Heal Demo Started'
+                : 'Workflow Initiated'
     return (
       <motion.div
         initial={{ opacity: 0, y: 5 }}
@@ -121,7 +125,7 @@ function LogEntry({ event }) {
         className={`py-3 px-4 mb-3 border rounded-lg ${isSelfHeal ? 'bg-purple-950/30 border-purple-500/30' : 'bg-white/5 border-white/10'}`}
       >
         <div className={`font-semibold text-sm ${isSelfHeal ? 'text-purple-300' : 'text-gray-200'}`}>
-          {isSelfHeal ? '🩹 Self-Heal Demo Started' : 'Workflow Initiated'}
+          {label}
         </div>
         {event.data?.ticket && (
           <div className="text-gray-500 text-xs mt-1">Target: {event.data.ticket}</div>
@@ -131,6 +135,8 @@ function LogEntry({ event }) {
   }
 
   if (event.type === 'workflow_complete') {
+    const mode = event.data?.mode || ''
+    const isSelfHeal = mode === 'self_heal_webhook' || mode === 'self_heal_skill'
     return (
       <motion.div
         initial={{ opacity: 0, y: 5 }}
@@ -139,7 +145,7 @@ function LogEntry({ event }) {
       >
         <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">✓</div>
         <div className="text-emerald-500 font-semibold text-sm">
-          {event.data?.mode === 'self_heal' ? '🩹 Self-Heal Complete — All Tests Passing' : 'Workflow Complete'}
+          {isSelfHeal ? '🩹 Self-Heal Complete — All Tests Passing' : 'Workflow Complete'}
         </div>
       </motion.div>
     )
@@ -222,7 +228,7 @@ function StageLogGroup({ block }) {
     : ''
 
   // Self-heal stages get a purple accent instead of indigo
-  const isSelfHeal = ['baseline_run','inject_decay','detect_failure','inspect_dom','apply_heal','verify_heal'].includes(startEvent.stage)
+  const isSelfHeal = ['fetch_pr_diff','run_regression','inspect_dom','apply_heal','verify_heal','raise_heal_pr'].includes(startEvent.stage)
   const accentClass = isSelfHeal ? 'text-purple-400' : 'text-indigo-400'
   const dotClass    = isSelfHeal ? 'bg-purple-500'   : 'bg-indigo-500'
 

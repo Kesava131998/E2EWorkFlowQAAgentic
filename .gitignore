@@ -14,11 +14,23 @@ env/
 # Playwright browsers and artifacts
 node_modules/
 playwright-report/
+test-results/
 reports/allure-results/
 reports/allure-report/
+reports/allure-html/
 reports/html/
+reports/heal_summary.md
 videos/
 screenshots/
+
+# Runtime-generated MCP config
+.mcp.headed.json
+
+# Playwright MCP page snapshots
+.playwright-mcp/
+
+# Screenshots captured during sessions
+*.png
 
 # Environment files
 .env
