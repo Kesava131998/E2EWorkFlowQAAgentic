@@ -42,12 +42,6 @@ UI_PR_TITLE    = "refactor(search): rename component class names for BEM complia
 # ── What changed in the UI PR ───────────────────────────────────────────────
 UI_CHANGES = [
     {
-        "file":    "src/Components/SearchComponent/Search.js",
-        "old_val": "searchIconContainer",
-        "new_val": "searchBtn",
-        "type":    "className",
-    },
-    {
         "file":    "src/Components/SearchComponent/PickupLocation.js",
         "old_val": "Location",
         "new_val": "Pickup Location",
@@ -63,12 +57,6 @@ FAILING_TESTS = [
         "locator": "input[placeholder='Location']",
         "error":   "TimeoutError: Locator not found after 5000ms",
     },
-    {
-        "id":      "REG-02",
-        "fn":      "test_reg_location_input_accepts_typing",
-        "locator": "input[placeholder='Location']",
-        "error":   "TimeoutError: Locator not found after 5000ms",
-    },
 ]
 
 # ── Healed locators (what Claude will produce) ──────────────────────────────
@@ -77,11 +65,6 @@ HEALED_LOCATORS = [
         "old": 'page.locator("input[placeholder=\'Location\']")',
         "new": 'page.locator("input[placeholder=\'Pickup Location\']")',
         "reasoning": "PR diff: placeholder attr changed from 'Location' → 'Pickup Location' in PickupLocation.js",
-    },
-    {
-        "old": 'page.locator(".searchIconContainer")',
-        "new": 'page.locator(".searchBtn")',
-        "reasoning": "PR diff: className renamed from searchIconContainer → searchBtn in Search.js",
     },
 ]
 
@@ -235,10 +218,10 @@ class Runner:
             self.log(f"    {t['error']}", "error", stage="run_regression")
             self.log(f"    Selector: {t['locator']}", "error", stage="run_regression")
         self.sleep(0.5)
-        self.log("2 failed, 0 passed  ·  12.1s", "error", stage="run_regression")
+        self.log("1 failed, 0 passed  ·  6.1s", "error", stage="run_regression")
         self.log("⚡ Locator decay detected — invoking self-heal agent", "warning", stage="run_regression")
-        self.stage_done("run_regression", "2/2 tests FAILED — self-heal triggered", {
-            "failed": 2, "passed": 0, "error_type": "LocatorTimeoutError",
+        self.stage_done("run_regression", "1/1 tests FAILED — self-heal triggered", {
+            "failed": 1, "passed": 0, "error_type": "LocatorTimeoutError",
         })
 
     # ── HITL: approve heal ────────────────────────────────────────────────
@@ -260,7 +243,7 @@ class Runner:
                 {"id": "reject",  "label": "✗ Reject — leave tests failing",  "variant": "warning"},
             ],
             context={
-                "failed_tests": 3,
+                "failed_tests": 1,
                 "broken_locators": [t["locator"] for t in FAILING_TESTS],
             },
         )
@@ -283,18 +266,10 @@ class Runner:
         self.sleep(0.7)
         self.log("  → Found: <input placeholder=\"Pickup Location\" class=\"inputOptionBox\">", "success", stage="inspect_dom")
         self.sleep(0.5)
-        self.log("Locating element matching: .searchIconContainer…", stage="inspect_dom")
-        self.sleep(0.6)
-        self.log("  → Element NOT found with old selector", "error", stage="inspect_dom")
-        self.log("  → Scanning sibling/parent class names…", stage="inspect_dom")
-        self.sleep(0.7)
-        self.log("  → Found: <div class=\"searchBtn\"> (was searchIconContainer)", "success", stage="inspect_dom")
-        self.sleep(0.5)
-        self.log("DOM snapshot captured  ·  2 candidate replacements identified", "success", stage="inspect_dom")
-        self.stage_done("inspect_dom", "DOM inspected — 2 replacement candidates found", {
+        self.log("DOM snapshot captured  ·  1 candidate replacement identified", "success", stage="inspect_dom")
+        self.stage_done("inspect_dom", "DOM inspected — 1 replacement candidate found", {
             "selectors_found": [
                 'input[placeholder="Pickup Location"]',
-                ".searchBtn",
             ],
             "url": "https://drivejoulez.com",
         })
@@ -365,10 +340,10 @@ class Runner:
             self.sleep(0.5)
             self.log(f"  PASSED  {t['fn']}  (4.6s)", "success", stage="verify_heal")
         self.sleep(0.5)
-        self.log("2 passed, 0 failed  ·  10.8s  🎉", "success", stage="verify_heal")
+        self.log("1 passed, 0 failed  ·  5.4s  🎉", "success", stage="verify_heal")
         self.log("Heal confirmed — all regression tests green ✅", "success", stage="verify_heal")
-        self.stage_done("verify_heal", "Heal confirmed: 2/2 passed ✅", {
-            "passed": 2, "total": 2, "failed": 0, "duration_s": 11,
+        self.stage_done("verify_heal", "Heal confirmed: 1/1 passed ✅", {
+            "passed": 1, "total": 1, "failed": 0, "duration_s": 6,
             "artifacts": [{"path": "reports/html/index.html", "type": "report", "label": "Regression Report"}],
         })
 
@@ -399,9 +374,8 @@ class Runner:
             f"   body: '## Self-Heal\\n\\n"
             f"Automated agent patched Playwright locators broken by UI PR #{UI_PR_NUMBER} "
             f"({UI_PR_TITLE}).\\n\\n"
-            f"### Root cause\\nCSS class renamed `searchIconContainer → searchBtn`, "
-            f"placeholder changed `Location → Pickup Location`.\\n\\n"
-            f"### Verification\\nAll 2 regression tests pass with healed selectors.'\n"
+            f"### Root cause\\nPlaceholder changed `Location → Pickup Location` in PickupLocation.js.\\n\\n"
+            f"### Verification\\nAll regression tests pass with healed selectors.'\n"
             f"   head: {heal_branch}\n"
             f"   base: main\n\n"
             f"Output ONLY the final PR URL on the last line."
@@ -519,10 +493,10 @@ class Runner:
         self.run_raise_heal_pr()
 
         send({"type": "workflow_complete",
-              "message": "Self-heal complete — 2/2 tests passing ✅",
+              "message": "Self-heal complete — 1/1 tests passing ✅",
               "level":   "success",
               "data": {
-                  "healed_selectors": 2,
+                  "healed_selectors": 1,
                   "heal_pr":          HEAL_PR_URL,
                   "ui_pr":            UI_PR_URL,
               }})

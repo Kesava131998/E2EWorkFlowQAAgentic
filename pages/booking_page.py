@@ -26,7 +26,7 @@ class BookingPage(BasePage):
         )
 
         # Search
-        self.search_icon: Locator = page.locator(".searchBtn")
+        self.search_icon: Locator = page.locator(".searchIconContainer")
         self.search_button_mobile: Locator = page.locator(".searchButton")
 
         # Vehicle result cards (on /cars-list)
