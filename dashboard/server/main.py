@@ -321,7 +321,7 @@ def _build_teams_payload(log: list[dict]) -> dict:
     # ── Footer ───────────────────────────────────────────────────────────────
     body += [
         _separator(),
-        _text_block("Powered by **Joulez Automation** — E2E Workflow Dashboard",
+        _text_block("Powered by **RevFlow Automation** — E2E Workflow Dashboard",
                     "Small", "Default", "Subtle", True),
     ]
 

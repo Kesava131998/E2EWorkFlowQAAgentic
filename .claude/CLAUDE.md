@@ -72,35 +72,36 @@ Each command file in `.claude/commands/` contains the full workflow.
 | `/jira-ticket` | `.claude/commands/jira-ticket.md` | Work from Jira ticket |
 | `/project-review` | `.claude/commands/project-review.md` | Full codebase audit |
 | `/debug-test` | `.claude/commands/debug-test.md` | Diagnose + fix failing test |
-| `/self-heal-demo` | `.claude/commands/self-heal-demo.md` | Live 6-stage self-heal demo — breaks + auto-heals booking_page.py locators |
+| `/self-heal-demo` | `.claude/commands/self-heal-demo.md` | Live 6-stage self-heal demo — breaks + auto-heals task_list_page.py locators |
 
 ---
 
 ## MCP Servers
 
-Four MCP servers are active via `.mcp.json` (loaded automatically — `enableAllProjectMcpServers: true`):
+Three MCP servers are active via `.mcp.json` (loaded automatically — `enableAllProjectMcpServers: true`):
 
 | Server | Package | Commands that use it |
 |--------|---------|---------------------|
 | **GitHub** | `@modelcontextprotocol/server-github` | `/raise-pr`, `/review-pr`, `/github-mcp-operations` |
 | **Jira** | `mcp-atlassian` (via `uvx`) | `/jira-ticket`, `/e2e-workflow` |
 | **Playwright** | `@playwright/mcp` | Browser automation, interactive testing, debugging |
-| **Swagger** | `@ivotoby/openapi-mcp-server` | Joulez API integration, endpoint testing |
 
 **Jira MCP tools available**: `jira_get_issue`, `jira_search`, `jira_create_issue`, `jira_update_issue`, `jira_transition_issue`
 
 **Playwright MCP tools available**: 150+ browser automation tools including `browser_navigate`, `browser_click`, `browser_fill_form`, `browser_take_screenshot`, `browser_network_request`, `browser_evaluate`, and more
 
-**Swagger MCP tools available**: 250+ Joulez API endpoints including booking operations (`crt-booking-using-pst`, `cancel-booking-using-del`), user management (`get-usr-using-get`, `upd-usr-using-put`), payment processing, car inventory, and location services. Base URL: `https://beta.drivejoulez.com:8443/joulez-service/`
-
-**Configuration**: credentials are stored inline in `.mcp.json` (git-ignored). Restart Claude Code after any changes to `.mcp.json`.
+**Configuration**: credentials are stored inline in `.mcp.json` (git-ignored). Restart Claude Code after any changes to `.mcp.json`. No OpenAPI/Swagger spec is currently known for the application under test — if one becomes available, add a Swagger MCP server here and wire it into `/e2e-workflow`'s Swagger Discovery step.
 
 ---
 
+## Application Under Test
+
+**RevFlow** (`https://revflow-dev.axgsolutions.com/`) — a healthcare accounts-receivable / billing case-management app. Login is via Microsoft Azure AD SSO ("Sign in with Microsoft"), modeled by `pages/login_page.py`. The Task List grid (`/tasks`, `pages/task_list_page.py`) lists resident/payer cases in a custom `arw-grid-table` component.
+
 ## Context hints for Claude
 
-- The main page hierarchy: `BasePage` ← all page classes
+- The main page hierarchy: `BasePage` ← all page classes (`LoginPage`, `TaskListPage`, …)
 - Test sessions do NOT open new browsers per-test; see `tests/conftest.py` scope=`module`
 - Root `conftest.py` handles screenshot capture on failure and Allure cleanup
-- `config/settings.py` reads `.env` — prefer `settings.*` in tests
+- `config/settings.py` reads `.env` — prefer `settings.*` in tests (`settings.BASE_URL`, `settings.AUTH_USERNAME`, `settings.AUTH_PASSWORD`)
 - Generated reports at: `reports/html/`, `reports/allure-results/`, `reports/videos/`

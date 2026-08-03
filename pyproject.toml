@@ -1,4 +1,5 @@
 [tool.pytest.ini_options]
+pythonpath = ["."]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
@@ -11,8 +12,8 @@ addopts = [
     "--alluredir=reports/allure-results",
     "--html=reports/html/index.html",
     "--self-contained-html",
-    "-n=auto",
-    "--reruns=2",
+    "-n=1",
+    "--reruns=0",
     "--reruns-delay=1"
 ]
 markers = [
