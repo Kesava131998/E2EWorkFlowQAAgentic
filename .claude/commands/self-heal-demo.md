@@ -1,6 +1,6 @@
 ---
 name: self-heal-demo
-description: 6-stage live demo — breaks real booking_page.py locators, auto-heals them via Playwright MCP DOM inspection, streams every step to the dashboard
+description: 6-stage live demo — breaks real task_list_page.py locators, auto-heals them via Playwright MCP DOM inspection, streams every step to the dashboard
 tags: [self-heal, demo, playwright-mcp, dashboard, regression]
 ---
 
@@ -13,7 +13,7 @@ The demo targets **real production page objects** — not dummy code. It:
 2. Injects a realistic locator decay (simulating a UI refactor)
 3. Detects the failures automatically
 4. Uses Playwright MCP to inspect the live DOM and discover correct selectors
-5. Patches `pages/booking_page.py` in place
+5. Patches `pages/task_list_page.py` in place
 6. Re-runs the regression suite to confirm healing
 
 Every stage streams live to the dashboard at http://localhost:5173 with purple self-heal theming.
@@ -60,7 +60,7 @@ python dashboard/utils/client.py event \
   --type locator_diff \
   --stage apply_heal \
   --message "Healed: <selector_name>" \
-  --data '{"file":"pages/booking_page.py","line":<N>,"selector_name":"<name>","broken":"<broken_selector>","healed":"<healed_selector>"}' \
+  --data '{"file":"pages/task_list_page.py","line":<N>,"selector_name":"<name>","broken":"<broken_selector>","healed":"<healed_selector>"}' \
   2>/dev/null || true
 ```
 
@@ -78,7 +78,7 @@ If the health check fails, stop and tell the user:
 
 Also verify the regression test file and break script exist:
 ```bash
-ls tests/ui/test_booking_regression.py scripts/break_locators.py
+ls tests/ui/test_task_list_regression.py scripts/break_locators.py
 ```
 
 If either is missing, stop with a clear error message.
@@ -92,7 +92,7 @@ Emit the workflow start event with `mode: "self_heal"` to switch the dashboard t
 ```bash
 python dashboard/utils/client.py event \
   --type workflow_start \
-  --message "Self-Heal Demo — booking_page.py regression cycle" \
+  --message "Self-Heal Demo — task_list_page.py regression cycle" \
   --data '{"mode":"self_heal"}' \
   2>/dev/null || true
 ```
@@ -101,17 +101,17 @@ python dashboard/utils/client.py event \
 
 ## Stage 1 — Baseline Run (`baseline_run`)
 
-**Goal**: Confirm all 3 regression tests pass before any decay is injected.
+**Goal**: Confirm all 2 regression tests pass before any decay is injected.
 
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_start --stage baseline_run \
-  --message "Running booking regression suite (baseline)..." 2>/dev/null || true
+  --message "Running Task List regression suite (baseline)..." 2>/dev/null || true
 ```
 
 Run the regression suite (no parallelism — keep output readable for demo):
 ```bash
-python -m pytest tests/ui/test_booking_regression.py -v -p no:xdist \
+python -m pytest tests/ui/test_task_list_regression.py -v -p no:xdist \
   --tb=short 2>&1 | tee /tmp/baseline_run.txt
 BASELINE_EXIT=${PIPESTATUS[0]}
 ```
@@ -144,7 +144,7 @@ Stop the demo. Tell the user the regression suite is not in a clean state and to
 **If baseline passes**:
 ```bash
 python dashboard/utils/client.py event --type stage_complete --stage baseline_run \
-  --message "Baseline confirmed — $PASS_COUNT/3 tests passing ✓" \
+  --message "Baseline confirmed — $PASS_COUNT/2 tests passing ✓" \
   --level success \
   --data "{\"passed\":$PASS_COUNT,\"failed\":0}" \
   2>/dev/null || true
@@ -155,8 +155,8 @@ python dashboard/utils/client.py event --type stage_complete --stage baseline_ru
 ```bash
 HITL_OUT=$(python dashboard/utils/hitl_gate.py \
   --id "baseline-confirmed" \
-  --message "Baseline confirmed — $PASS_COUNT/3 tests passing. Inject locator decay into booking_page.py to begin the self-heal cycle?" \
-  --context "{\"passed\":\"$PASS_COUNT\",\"target_file\":\"pages/booking_page.py\",\"locators_to_break\":\"pickup_location_input, search_icon\"}" \
+  --message "Baseline confirmed — $PASS_COUNT/2 tests passing. Inject locator decay into task_list_page.py to begin the self-heal cycle?" \
+  --context "{\"passed\":\"$PASS_COUNT\",\"target_file\":\"pages/task_list_page.py\",\"locators_to_break\":\"grid_rows, grid_cells\"}" \
   2>/dev/null || true)
 HITL_EXIT=$?
 ```
@@ -168,12 +168,12 @@ HITL_EXIT=$?
 
 ## Stage 2 — Inject Decay (`inject_decay`)
 
-**Goal**: Break two locators in `booking_page.py` to simulate a UI refactor that invalidated selectors.
+**Goal**: Break two locators in `task_list_page.py` to simulate a UI refactor that invalidated selectors.
 
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_start --stage inject_decay \
-  --message "Injecting locator decay into pages/booking_page.py..." 2>/dev/null || true
+  --message "Injecting locator decay into pages/task_list_page.py..." 2>/dev/null || true
 ```
 
 Run the break script:
@@ -191,19 +191,19 @@ python dashboard/utils/client.py event --type stage_error --stage inject_decay \
 On success, emit one log line per broken locator to make the decay visible in the stream:
 ```bash
 python dashboard/utils/client.py event --type log --stage inject_decay \
-  --message "  ✗ pickup_location_input → input[placeholder='BrokenLocation']" \
+  --message "  ✗ grid_rows → .arw-broken-grid-table__row" \
   --level error 2>/dev/null || true
 
 python dashboard/utils/client.py event --type log --stage inject_decay \
-  --message "  ✗ search_icon → .brokenSearchIconContainer" \
+  --message "  ✗ grid_cells → .arw-broken-grid-table__cell" \
   --level error 2>/dev/null || true
 ```
 
 ```bash
 python dashboard/utils/client.py event --type stage_complete --stage inject_decay \
-  --message "Decay injected — 2 locators broken in booking_page.py" \
+  --message "Decay injected — 2 locators broken in task_list_page.py" \
   --level warning \
-  --data '{"broken_locators":["pickup_location_input","search_icon"]}' \
+  --data '{"broken_locators":["grid_rows","grid_cells"]}' \
   2>/dev/null || true
 ```
 
@@ -220,7 +220,7 @@ python dashboard/utils/client.py event --type stage_start --stage detect_failure
 ```
 
 ```bash
-python -m pytest tests/ui/test_booking_regression.py -v -p no:xdist \
+python -m pytest tests/ui/test_task_list_regression.py -v -p no:xdist \
   --tb=short 2>&1 | tee /tmp/detect_run.txt
 DETECT_EXIT=${PIPESTATUS[0]}
 ```
@@ -247,7 +247,7 @@ python dashboard/utils/client.py event --type stage_error --stage detect_failure
   --message "Expected failures but all tests passed — decay may not have been applied correctly." \
   --level error 2>/dev/null || true
 ```
-Stop demo and advise user to check `pages/booking_page.py` manually.
+Stop demo and advise user to check `pages/task_list_page.py` manually.
 
 **If failures detected as expected**:
 ```bash
@@ -264,8 +264,8 @@ python dashboard/utils/client.py event --type stage_error --stage detect_failure
 ```bash
 HITL_OUT=$(python dashboard/utils/hitl_gate.py \
   --id "failure-detected" \
-  --message "$FAIL_COUNT test(s) failed due to broken locators. Proceed with AI self-heal? (Playwright MCP will inspect the live DOM and patch booking_page.py)" \
-  --context "{\"failed\":\"$FAIL_COUNT\",\"broken_selectors\":\"pickup_location_input, search_icon\"}" \
+  --message "$FAIL_COUNT test(s) failed due to broken locators. Proceed with AI self-heal? (Playwright MCP will inspect the live DOM and patch task_list_page.py)" \
+  --context "{\"failed\":\"$FAIL_COUNT\",\"broken_selectors\":\"grid_rows, grid_cells\"}" \
   2>/dev/null || true)
 HITL_EXIT=$?
 ```
@@ -283,65 +283,65 @@ HITL_EXIT=$?
 
 ## Stage 4 — Inspect DOM (`inspect_dom`)
 
-**Goal**: Use Playwright MCP to navigate to the live booking page and discover the correct selectors by inspecting the real DOM. This is the AI "seeing" the broken UI and figuring out the fix.
+**Goal**: Use Playwright MCP to navigate to the live Task List page and discover the correct selectors by inspecting the real DOM. This is the AI "seeing" the broken UI and figuring out the fix.
 
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_start --stage inspect_dom \
-  --message "Launching browser — inspecting live DOM at drivejoulez.com..." 2>/dev/null || true
+  --message "Launching browser — inspecting live DOM at revflow-dev.axgsolutions.com..." 2>/dev/null || true
 ```
 
 ```bash
 python dashboard/utils/client.py event --type log --stage inspect_dom \
-  --message "  → Playwright MCP: navigating to booking page..." 2>/dev/null || true
+  --message "  → Playwright MCP: navigating to Task List page..." 2>/dev/null || true
 ```
 
 **Use Playwright MCP tools** (these are real MCP tool calls, not bash):
 
-1. Navigate to the Joulez booking page:
+1. Log in via Microsoft SSO and navigate to the Task List page:
    - Tool: `mcp__playwright__browser_navigate`
-   - URL: `https://drivejoulez.com` (or the staging URL from `.env` if available)
+   - URL: `https://revflow-dev.axgsolutions.com/tasks` (login flow: click "Sign in with Microsoft", complete the Azure AD prompts using `AUTH_USERNAME`/`AUTH_PASSWORD` from `.env`)
 
 2. Wait for the page to load and capture a DOM snapshot:
    - Tool: `mcp__playwright__browser_snapshot`
    - This returns the accessibility tree / DOM structure
 
 3. Analyse the snapshot to find:
-   - The location input field — look for `<input>` elements with `placeholder` attributes containing "Location", "Pick up", "Where", or similar
-   - The search/submit button — look for elements with class names containing "search", "submit", "icon", or button roles near the location input
+   - The grid row wrapper — look for `<div>` elements with a class containing "grid" and "row", `role="link"`, wrapping resident/payer case data
+   - The grid cell wrapper — look for `<div>` elements with a class containing "grid" and "cell" nested inside each row
 
 4. If the snapshot is not conclusive, use targeted evaluation:
    - Tool: `mcp__playwright__browser_evaluate`
-   - Script: `document.querySelector('input[placeholder]')?.placeholder` to find real placeholder text
-   - Script: `[...document.querySelectorAll('[class*="search"]')].map(e => e.className)` to find search container class names
+   - Script: `[...document.querySelectorAll('[class*="grid"][class*="row"]')].map(e => e.className)` to find row container class names
+   - Script: `[...document.querySelectorAll('[class*="grid"][class*="cell"]')].map(e => e.className)` to find cell container class names
 
 5. Close the browser when done:
    - Tool: `mcp__playwright__browser_close`
 
 Emit discovery results to the log stream as you find them:
 ```bash
-# After identifying the correct location input placeholder:
-CORRECT_LOCATION_SELECTOR="input[placeholder='Location']"  # replace with actual discovered value
+# After identifying the correct grid row class:
+CORRECT_ROW_SELECTOR=".arw-grid-table__row"  # replace with actual discovered value
 python dashboard/utils/client.py event --type log --stage inspect_dom \
-  --message "  ✓ Found location input: $CORRECT_LOCATION_SELECTOR" \
+  --message "  ✓ Found grid row: $CORRECT_ROW_SELECTOR" \
   --level success 2>/dev/null || true
 
-# After identifying the correct search icon class:
-CORRECT_SEARCH_SELECTOR=".searchIconContainer"  # replace with actual discovered value
+# After identifying the correct grid cell class:
+CORRECT_CELL_SELECTOR=".arw-grid-table__cell"  # replace with actual discovered value
 python dashboard/utils/client.py event --type log --stage inspect_dom \
-  --message "  ✓ Found search icon: $CORRECT_SEARCH_SELECTOR" \
+  --message "  ✓ Found grid cell: $CORRECT_CELL_SELECTOR" \
   --level success 2>/dev/null || true
 ```
 
 Store the discovered selectors as variables for Stage 5:
-- `$CORRECT_LOCATION_SELECTOR` — the real placeholder text or selector
-- `$CORRECT_SEARCH_SELECTOR` — the real CSS class or selector
+- `$CORRECT_ROW_SELECTOR` — the real CSS class or selector for the grid row
+- `$CORRECT_CELL_SELECTOR` — the real CSS class or selector for the grid cell
 
 ```bash
 python dashboard/utils/client.py event --type stage_complete --stage inspect_dom \
   --message "DOM inspection complete — correct selectors identified" \
   --level success \
-  --data "{\"location_selector\":\"$CORRECT_LOCATION_SELECTOR\",\"search_selector\":\"$CORRECT_SEARCH_SELECTOR\"}" \
+  --data "{\"row_selector\":\"$CORRECT_ROW_SELECTOR\",\"cell_selector\":\"$CORRECT_CELL_SELECTOR\"}" \
   2>/dev/null || true
 ```
 
@@ -349,23 +349,23 @@ python dashboard/utils/client.py event --type stage_complete --stage inspect_dom
 
 ## Stage 5 — Apply Heal (`apply_heal`)
 
-**Goal**: Patch `pages/booking_page.py` with the correct selectors discovered in Stage 4. Emit a `locator_diff` event for each fix so the dashboard renders the animated purple diff block.
+**Goal**: Patch `pages/task_list_page.py` with the correct selectors discovered in Stage 4. Emit a `locator_diff` event for each fix so the dashboard renders the animated purple diff block.
 
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_start --stage apply_heal \
-  --message "Patching pages/booking_page.py with healed selectors..." 2>/dev/null || true
+  --message "Patching pages/task_list_page.py with healed selectors..." 2>/dev/null || true
 ```
 
-**Read the current state of `booking_page.py`** (use the Read tool, not bash cat).
+**Read the current state of `task_list_page.py`** (use the Read tool, not bash cat).
 
 Find the line numbers of the two broken locators. They will contain the broken strings injected by `break_locators.py`:
-- `input[placeholder='BrokenLocation']`
-- `.brokenSearchIconContainer`
+- `.arw-broken-grid-table__row`
+- `.arw-broken-grid-table__cell`
 
-**Fix 1 — pickup_location_input**:
+**Fix 1 — grid_rows**:
 
-Use the Edit tool to replace the broken selector with `$CORRECT_LOCATION_SELECTOR`.
+Use the Edit tool to replace the broken selector with `$CORRECT_ROW_SELECTOR`.
 
 After applying the edit, emit the `locator_diff` event:
 ```bash
@@ -373,19 +373,19 @@ LINE_NUM=<line number from your Read>
 python dashboard/utils/client.py event \
   --type locator_diff \
   --stage apply_heal \
-  --message "Healed: pickup_location_input" \
-  --data "{\"file\":\"pages/booking_page.py\",\"line\":$LINE_NUM,\"selector_name\":\"pickup_location_input\",\"broken\":\"input[placeholder='BrokenLocation']\",\"healed\":\"$CORRECT_LOCATION_SELECTOR\"}" \
+  --message "Healed: grid_rows" \
+  --data "{\"file\":\"pages/task_list_page.py\",\"line\":$LINE_NUM,\"selector_name\":\"grid_rows\",\"broken\":\".arw-broken-grid-table__row\",\"healed\":\"$CORRECT_ROW_SELECTOR\"}" \
   2>/dev/null || true
 ```
 
 ```bash
 python dashboard/utils/client.py event --type log --stage apply_heal \
-  --message "  ✓ pickup_location_input healed on line $LINE_NUM" --level success 2>/dev/null || true
+  --message "  ✓ grid_rows healed on line $LINE_NUM" --level success 2>/dev/null || true
 ```
 
-**Fix 2 — search_icon**:
+**Fix 2 — grid_cells**:
 
-Use the Edit tool to replace `.brokenSearchIconContainer` with `$CORRECT_SEARCH_SELECTOR`.
+Use the Edit tool to replace `.arw-broken-grid-table__cell` with `$CORRECT_CELL_SELECTOR`.
 
 After applying the edit, emit the `locator_diff` event:
 ```bash
@@ -393,21 +393,21 @@ LINE_NUM_2=<line number from your Read>
 python dashboard/utils/client.py event \
   --type locator_diff \
   --stage apply_heal \
-  --message "Healed: search_icon" \
-  --data "{\"file\":\"pages/booking_page.py\",\"line\":$LINE_NUM_2,\"selector_name\":\"search_icon\",\"broken\":\".brokenSearchIconContainer\",\"healed\":\"$CORRECT_SEARCH_SELECTOR\"}" \
+  --message "Healed: grid_cells" \
+  --data "{\"file\":\"pages/task_list_page.py\",\"line\":$LINE_NUM_2,\"selector_name\":\"grid_cells\",\"broken\":\".arw-broken-grid-table__cell\",\"healed\":\"$CORRECT_CELL_SELECTOR\"}" \
   2>/dev/null || true
 ```
 
 ```bash
 python dashboard/utils/client.py event --type log --stage apply_heal \
-  --message "  ✓ search_icon healed on line $LINE_NUM_2" --level success 2>/dev/null || true
+  --message "  ✓ grid_cells healed on line $LINE_NUM_2" --level success 2>/dev/null || true
 ```
 
 ```bash
 python dashboard/utils/client.py event --type stage_complete --stage apply_heal \
-  --message "2 locators healed in pages/booking_page.py" \
+  --message "2 locators healed in pages/task_list_page.py" \
   --level success \
-  --data '{"healed_count":2,"file":"pages/booking_page.py"}' \
+  --data '{"healed_count":2,"file":"pages/task_list_page.py"}' \
   2>/dev/null || true
 ```
 
@@ -415,7 +415,7 @@ python dashboard/utils/client.py event --type stage_complete --stage apply_heal 
 
 ## Stage 6 — Verify Heal (`verify_heal`)
 
-**Goal**: Re-run the full regression suite. All 3 tests must pass to confirm the heal was successful.
+**Goal**: Re-run the full regression suite. All 2 tests must pass to confirm the heal was successful.
 
 ```bash
 # 📊 Dashboard
@@ -424,7 +424,7 @@ python dashboard/utils/client.py event --type stage_start --stage verify_heal \
 ```
 
 ```bash
-python -m pytest tests/ui/test_booking_regression.py -v -p no:xdist \
+python -m pytest tests/ui/test_task_list_regression.py -v -p no:xdist \
   --tb=short 2>&1 | tee /tmp/verify_run.txt
 VERIFY_EXIT=${PIPESTATUS[0]}
 ```
@@ -473,23 +473,23 @@ cat > "$SUMMARY_PATH" << EOF
 # Self-Heal Summary
 
 **Date**: $(date '+%Y-%m-%d %H:%M:%S')
-**Target file**: pages/booking_page.py
-**Locators healed**: 2 (pickup_location_input, search_icon)
-**Regression tests**: $VERIFY_PASS/3 passing
-**DOM inspection**: Live drivejoulez.com
+**Target file**: pages/task_list_page.py
+**Locators healed**: 2 (grid_rows, grid_cells)
+**Regression tests**: $VERIFY_PASS/2 passing
+**DOM inspection**: Live revflow-dev.axgsolutions.com
 
 ## Healed Selectors
 
 | Locator | Broken | Healed |
 |---------|--------|--------|
-| pickup_location_input | input[placeholder='BrokenLocation'] | $CORRECT_LOCATION_SELECTOR |
-| search_icon | .brokenSearchIconContainer | $CORRECT_SEARCH_SELECTOR |
+| grid_rows | .arw-broken-grid-table__row | $CORRECT_ROW_SELECTOR |
+| grid_cells | .arw-broken-grid-table__cell | $CORRECT_CELL_SELECTOR |
 EOF
 ```
 
 ```bash
 python dashboard/utils/client.py event --type stage_complete --stage verify_heal \
-  --message "All $VERIFY_PASS/3 tests passing — self-heal complete ✓" \
+  --message "All $VERIFY_PASS/2 tests passing — self-heal complete ✓" \
   --level success \
   --data "{\"passed\":$VERIFY_PASS,\"failed\":0,\"artifacts\":[{\"label\":\"Heal Summary\",\"type\":\"markdown\",\"path\":\"$SUMMARY_PATH\"}]}" \
   2>/dev/null || true
@@ -502,15 +502,15 @@ python dashboard/utils/client.py event --type stage_complete --stage verify_heal
 ```bash
 python dashboard/utils/client.py event \
   --type workflow_complete \
-  --message "Self-heal cycle complete — $VERIFY_PASS/3 regression tests passing" \
+  --message "Self-heal cycle complete — $VERIFY_PASS/2 regression tests passing" \
   --data '{"mode":"self_heal","success":true}' \
   2>/dev/null || true
 ```
 
 Tell the user:
 > **Self-heal demo complete.**
-> - 2 locators in `pages/booking_page.py` were broken and healed automatically
-> - All 3 regression tests are passing
+> - 2 locators in `pages/task_list_page.py` were broken and healed automatically
+> - All 2 regression tests are passing
 > - Heal summary saved to `$SUMMARY_PATH`
 > - Dashboard at http://localhost:5173 shows the full cycle with locator diffs
 
@@ -518,7 +518,7 @@ Tell the user:
 
 ## Error Recovery
 
-At any point if the demo aborts unexpectedly, restore `booking_page.py` to its clean state:
+At any point if the demo aborts unexpectedly, restore `task_list_page.py` to its clean state:
 ```bash
 python scripts/break_locators.py --restore 2>/dev/null || true
 ```

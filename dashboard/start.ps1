@@ -1,4 +1,4 @@
-# Joulez - E2E Workflow Dashboard -- Windows PowerShell starter
+# RevFlow - E2E Workflow Dashboard -- Windows PowerShell starter
 # Run with: powershell -ExecutionPolicy Bypass -File start.ps1
 
 $ErrorActionPreference = "Stop"
@@ -25,7 +25,7 @@ $PY_VER = & "$PY" -c "import sys; print(str(sys.version_info.major) + '.' + str(
 
 Write-Host "${CYAN}"
 Write-Host "  +======================================+"
-Write-Host "  |   Joulez - E2E Workflow Dashboard    |"
+Write-Host "  |   RevFlow - E2E Workflow Dashboard    |"
 Write-Host "  +======================================+"
 Write-Host "${NC}"
 Write-Host "  Using Python $PY_VER at $PY"

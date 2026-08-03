@@ -12,15 +12,18 @@ class Settings:
     SHORT_TIMEOUT = int(os.getenv("SHORT_TIMEOUT", 5000))
 
     # URLs
-    BASE_URL = os.getenv("BASE_URL", "https://drivejoulez.com")
-    API_BASE_URL = os.getenv("API_BASE_URL", "https://beta.drivejoulez.com:8443/joulez-service")
+    BASE_URL = os.getenv("BASE_URL", "https://revflow-dev.axgsolutions.com")
+
+    # Auth (RevFlow uses Microsoft Azure AD SSO)
+    AUTH_USERNAME = os.getenv("AUTH_USERNAME", "")
+    AUTH_PASSWORD = os.getenv("AUTH_PASSWORD", "")
 
     # Browser settings
     HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
     BROWSER = os.getenv("BROWSER", "chromium")
 
     # Parallel settings
-    WORKERS = int(os.getenv("WORKERS", 4))
+    WORKERS = int(os.getenv("WORKERS", 1))
 
     # Reporting
     ALLURE_DIR = os.getenv("ALLURE_DIR", "reports/allure-results")

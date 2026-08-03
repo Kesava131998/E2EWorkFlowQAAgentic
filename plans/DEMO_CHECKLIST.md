@@ -17,26 +17,25 @@
 
 ### 1.2 MCP Servers (Claude Tools)
 
-All four are loaded automatically from `.mcp.json` when `claude` runs. Verify tokens are live:
+Three are loaded automatically from `.mcp.json` when `claude` runs. Verify tokens are live:
 
 | MCP | Quick Check |
 |-----|-------------|
 | **GitHub** | `gh auth status` or check `.mcp.json` token hasn't expired |
-| **Jira** | `curl -u email:token https://innocito.atlassian.net/rest/api/3/myself` → 200 |
+| **Jira** | `curl -u email:token https://vikeshwiki9.atlassian.net/rest/api/3/myself` → 200 |
 | **Playwright** | `npx @playwright/mcp --version` (should print without error) |
-| **Swagger** | `curl https://beta.drivejoulez.com:8443/joulez-service/v2/api-docs` → JSON |
 
 - [ ] GitHub token valid (check `.mcp.json` → `GITHUB_PERSONAL_ACCESS_TOKEN`)
 - [ ] Jira reachable and token valid
 - [ ] Playwright MCP can launch a browser: `npx playwright open about:blank` — opens and closes cleanly
-- [ ] Swagger API is reachable (no VPN / cert issues)
 - [ ] `ANTHROPIC_API_KEY` set in `.env` (needed for `claude -p` calls inside self-heal agent)
+- [ ] `AUTH_USERNAME` / `AUTH_PASSWORD` set in `.env` for RevFlow Microsoft SSO login
 
 ### 1.3 Ports
 
 - [ ] Port **8765** is free (or already held by the dashboard server)
 - [ ] Port **5173** is free (or already held by the Vite client)
-- [ ] If doing the real self-heal webhook flow: port **3000** needs the consumer app running
+- [ ] If doing the real self-heal webhook flow: port **3000** needs the RevFlow frontend app running locally (TODO: confirm the real frontend repo/dev-server setup once known)
 
 ### 1.4 Repos & Git State
 
@@ -49,7 +48,7 @@ All four are loaded automatically from `.mcp.json` when `claude` runs. Verify to
 
 ## 2. E2E Workflow Demo Checklist
 
-**What it does**: Simulates the full Jira-to-PR pipeline for JP-1 (Pre Payment Booking Flow) — fetches ticket, derives test cases via Claude, generates test code, runs AC1 tests, commits, raises PR, updates Jira, posts PR review.
+**What it does**: Simulates the full Jira-to-PR pipeline for KAN-2 (Task 2 — Payment Schedule Icon) — fetches ticket, derives test cases via Claude, generates test code, verifies collection, commits, raises PR, updates Jira, posts PR review.
 
 **Run command**:
 ```bash
@@ -61,41 +60,39 @@ Or click **Mock Run** on the E2E tab in the dashboard.
 
 ### 2.1 Jira
 
-- [ ] Ticket **JP-1** exists at `https://innocito.atlassian.net/browse/JP-1`
-- [ ] JP-1 status is **not** already "Done" (mock run transitions it to "In Review")
+- [ ] Ticket **KAN-2** exists at `https://vikeshwiki9.atlassian.net/browse/KAN-2`
+- [ ] KAN-2 status is **not** already "Done" (mock run transitions it to "In Review")
 - [ ] Jira API token has `read:jira-work` + `write:jira-work` scopes
-- [ ] Jira base URL in `.mcp.json` → `JIRA_URL=https://innocito.atlassian.net`
+- [ ] Jira base URL in `.mcp.json` → `JIRA_URL=https://vikeshwiki9.atlassian.net`
 
 ### 2.2 GitHub (Automation Repo)
 
 - [ ] Repo `innocito/AI-Test-Workflow` is accessible with current GitHub token
 - [ ] Token has scopes: `repo` (read + write), `pull_requests` (create)
-- [ ] Branch `jp-1-pre-payment-booking-flow-v17` does **not** already exist (mock re-creates it)
-  - Clean up if present: `git push origin --delete jp-1-pre-payment-booking-flow-v17`
-- [ ] PR #17 is closed/merged or the mock run will fail on duplicate (check GitHub)
+- [ ] Branch `kan-2-task-2` does **not** already exist (mock re-creates it)
+  - Clean up if present: `git push origin --delete kan-2-task-2`
+- [ ] PR #24 is closed/merged or the mock run will fail on duplicate (check GitHub)
 
-### 2.3 Swagger API
+### 2.3 API Spec
 
-- [ ] `https://beta.drivejoulez.com:8443` is reachable
-- [ ] OpenAPI spec returns valid JSON: `curl -k https://beta.drivejoulez.com:8443/joulez-service/v2/api-docs | head -5`
+- [ ] No Swagger/OpenAPI spec is currently configured for RevFlow — Swagger Discovery is skipped in this demo. If one becomes available, add it to `.mcp.json` and this checklist.
 
 ### 2.4 Dashboard State (E2E tab)
 
 - [ ] Dashboard reset: `curl -X DELETE http://localhost:8765/reset`
 - [ ] No active workflow running: `curl http://localhost:8765/run/status` → `{"running": false}`
-- [ ] Plans dir has no stale JP-1 files (optional cleanup):
+- [ ] Plans dir has no stale KAN-2 files (optional cleanup):
   ```bash
-  rm -f plans/manual_tests_jp-1_*.md plans/manual_tests_jp-1_*.csv plans/postman_jp-1_*.json
+  rm -f plans/manual_tests_kan-2_*.md plans/manual_tests_kan-2_*.csv
   ```
 
-### 2.5 HITL Gates (E2E flow has 5 checkpoints)
+### 2.5 HITL Gates (E2E flow has 4 checkpoints)
 
 If demoing interactively, be ready to click in the dashboard at:
-1. **Test case review** — approve the 27 derived test cases
-2. **API scope** — include or skip API tests
-3. **Postman scope** — include or skip Postman export
-4. **Naming preview** — approve function name conventions
-5. **Execution scope** — choose AC1 only, full suite, or skip
+1. **Test case review** — approve the 7 derived test cases
+2. **API scope** — confirm UI-only (no Swagger spec configured)
+3. **Naming preview** — approve function name conventions
+4. **Execution scope** — collection check only, or skip straight to commit
 
 Use `--no-hitl` to auto-approve all if demoing speed.
 
@@ -109,7 +106,7 @@ Two sub-modes: **Mock Run** (scripted, always works) and **Real Webhook** (live 
 
 ### 3A. Self-Heal — Mock Run
 
-**What it does**: Scripted 5-stage demo — simulates 2 failing regression tests, shows DOM inspection, calls the real `self_heal_agent.py` to heal `booking_page.py`, verifies, raises a real heal PR on GitHub.
+**What it does**: Scripted 5-stage demo — simulates a failing regression test, shows DOM inspection, calls the real `self_heal_agent.py` to heal `task_list_page.py`, verifies, raises a real heal PR on GitHub.
 
 **Run command**:
 ```bash
@@ -119,25 +116,25 @@ python dashboard/self_heal_run.py --no-hitl       # unattended
 ```
 Or click **Mock Run** on the Self-Heal tab in the dashboard.
 
-#### 3A.1 Booking Page Locator State
+#### 3A.1 Task List Page Locator State
 
-The mock uses **`pickup_location_input`** as the only locator the agent heals.
+The mock uses **`grid_rows`** as the locator the agent heals.
 
-- [ ] `pages/booking_page.py` line 14 reads: `page.locator("input[placeholder='Location']")`
+- [ ] `pages/task_list_page.py` reads: `page.locator(".arw-grid-table__row")`
   - This is the "broken" locator the mock simulates. The agent will heal it.
-  - If it already shows `"Pickup Location"` from a prior run: `git checkout pages/booking_page.py`
+  - If it was left in a broken state from a prior run: `git checkout pages/task_list_page.py`
 
-#### 3A.2 Consumer Repo (Mock reads PR diff from GitHub)
+#### 3A.2 Frontend Repo (Mock reads PR diff from GitHub)
 
-The mock agent fetches PR #7 from `innocito/consumer` via GitHub API:
+The mock agent fetches a UI PR via GitHub API — `UI_REPO` is env-var driven and not yet set to a real repo (`self_heal_agent.py` / `self_heal_run.py` fall back to an empty string with a TODO comment):
 
-- [ ] PR #7 exists on `innocito/consumer` and is accessible (mock hardcodes it)
-- [ ] GitHub token in `.mcp.json` can read `innocito/consumer` PR diffs
+- [ ] Set `UI_REPO` env var to the real RevFlow frontend repo once known, or expect the PR-fetch step to no-op gracefully
+- [ ] GitHub token in `.mcp.json` can read that repo's PR diffs once configured
 
 #### 3A.3 GitHub — Heal PR
 
 - [ ] Branch `heal/ui-pr-7-locators` does **not** exist on `innocito/AI-Test-Workflow`
-  - If it does: `git push innocito/AI-Test-Workflow --delete heal/ui-pr-7-locators` (via GitHub MCP or gh CLI)
+  - If it does: delete via GitHub MCP or `gh` CLI
 - [ ] No stale heal PR open for PR #7 (check GitHub, close if present)
 
 #### 3A.4 Dashboard State
@@ -155,7 +152,9 @@ The mock agent fetches PR #7 from `innocito/consumer` via GitHub API:
 
 ### 3B. Self-Heal — Real Webhook Flow
 
-**What it does**: A real PR is pushed to the consumer repo → GitHub webhook hits the dashboard → dashboard modal appears → user approves → `self_heal_agent.py` runs the full 7-stage pipeline live.
+**What it does**: A real PR is pushed to the RevFlow frontend repo → GitHub webhook hits the dashboard → dashboard modal appears → user approves → `self_heal_agent.py` runs the full 7-stage pipeline live.
+
+> **Prerequisite**: the RevFlow frontend repo and its local dev-server setup are not yet confirmed (`UI_REPO`, `UI_URL` are placeholders in `scripts/self_heal_agent.py`). Fill these in before running this sub-mode.
 
 #### 3B.1 Webhook Configuration
 
@@ -163,46 +162,41 @@ The mock agent fetches PR #7 from `innocito/consumer` via GitHub API:
   ```bash
   ngrok http 8765    # Get public URL e.g. https://abc123.ngrok.app
   ```
-- [ ] GitHub webhook is configured on `innocito/consumer`:
+- [ ] GitHub webhook is configured on the RevFlow frontend repo:
   - **Payload URL**: `https://<your-tunnel>/webhook/github`
   - **Content type**: `application/json`
   - **Events**: Pull requests → Opened, Synchronize, Reopened
   - **Active**: ✅
 - [ ] Verify webhook delivery works: click **Redeliver** on a past delivery in GitHub webhook settings → dashboard should receive `pr_detected` event
 
-#### 3B.2 Consumer Repo State (Breaking the Locator)
+#### 3B.2 Frontend Repo State (Breaking the Locator)
 
-The real heal flow requires a PR that actually breaks `input[placeholder='Location']`:
+The real heal flow requires a PR that actually breaks `.arw-grid-table__row` (or another `task_list_page.py` locator):
 
-- [ ] Consumer repo is on `main`, clean: `cd /Users/eswarprasadkona/Desktop/code/Innocito/joulez/consumer && git status`
-- [ ] `PickupLocation.js` line 456 currently reads `placeholder="Location"` (baseline)
-- [ ] **To break it**: create a branch, change `placeholder="Location"` → `placeholder="Pickup Location"`, push and open PR
+- [ ] Frontend repo is on `main`, clean: `git status`
+- [ ] Confirm the current grid row class name (baseline)
+- [ ] **To break it**: create a branch, rename the grid row CSS class, push and open PR
   ```bash
-  git checkout -b demo/break-locator-pickup
-  # edit PickupLocation.js line 456
-  git commit -am "refactor(search): update pickup placeholder text"
-  git push origin demo/break-locator-pickup
-  gh pr create --title "refactor(search): update pickup placeholder" --base main
+  git checkout -b demo/break-locator-grid-row
+  # edit the Task List grid component's row class name
+  git commit -am "refactor(task-list): rename grid row class"
+  git push origin demo/break-locator-grid-row
+  gh pr create --title "refactor(task-list): rename grid row class" --base main
   ```
 - [ ] Confirm the PR triggers the webhook (check dashboard for modal)
 
-#### 3B.3 Consumer App on localhost:3000
+#### 3B.3 RevFlow Frontend App on localhost:3000
 
 The real agent verifies the heal against the running PR branch app:
 
-- [ ] Consumer app is running on port 3000 with the **PR branch** code checked out:
-  ```bash
-  cd /Users/eswarprasadkona/Desktop/code/Innocito/joulez/consumer
-  git checkout demo/break-locator-pickup
-  npm install && npm start    # or yarn start
-  ```
-- [ ] `http://localhost:3000` loads the Joulez homepage
-- [ ] Pickup input field shows the new placeholder (`Pickup Location`)
+- [ ] Frontend app is running on port 3000 with the **PR branch** code checked out
+- [ ] `http://localhost:3000` loads the RevFlow Task List page
+- [ ] Grid row shows the new class name
 
-#### 3B.4 Booking Page Locator State
+#### 3B.4 Task List Page Locator State
 
-- [ ] `pages/booking_page.py` has the **old** (now-broken) locator: `input[placeholder='Location']`
-  - If it was already healed by a prior run: `git checkout pages/booking_page.py`
+- [ ] `pages/task_list_page.py` has the **old** (now-broken) locator: `.arw-grid-table__row`
+  - If it was already healed by a prior run: `git checkout pages/task_list_page.py`
 
 #### 3B.5 GitHub — Heal PR
 
@@ -224,7 +218,7 @@ Run these after each demo to leave the system in a clean state for the next run.
 ### Automation Repo
 ```bash
 # Restore POM to original locators
-git checkout pages/booking_page.py
+git checkout pages/task_list_page.py
 
 # Delete heal branches (if created)
 git push origin --delete heal/ui-pr-7-locators 2>/dev/null || true
@@ -236,13 +230,6 @@ rm -f reports/heal_summary.md
 ### Dashboard
 ```bash
 curl -X DELETE http://localhost:8765/reset
-```
-
-### Consumer Repo (after webhook demo)
-```bash
-cd /Users/eswarprasadkona/Desktop/code/Innocito/joulez/consumer
-git checkout main
-# Close/delete the demo PR on GitHub if still open
 ```
 
 ### GitHub (via gh CLI)
@@ -275,16 +262,16 @@ curl -s -X POST http://localhost:8765/webhook/github \
 curl http://localhost:8765/run/status
 # Expected: {"running":false}
 
-# 4. Swagger API reachable
-curl -sk https://beta.drivejoulez.com:8443/joulez-service/v2/api-docs | python3 -c "import sys,json; d=json.load(sys.stdin); print('Swagger OK —', d.get('info',{}).get('title','?'))"
+# 4. Jira reachable (replace with actual token from .mcp.json)
+curl -s "https://vikeshwiki9.atlassian.net/rest/api/3/issue/KAN-2" \
+  -u "vikesh.wiki.9@gmail.com:<JIRA_TOKEN>" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Jira OK —', d.get('fields',{}).get('summary','?'))"
 
-# 5. Jira reachable (replace with actual token from .mcp.json)
-curl -s "https://innocito.atlassian.net/rest/api/3/issue/JP-1" \
-  -u "eswarprasad.kona@innocito.com:<JIRA_TOKEN>" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Jira OK —', d.get('fields',{}).get('summary','?'))"
+# 5. RevFlow reachable and login works (manual check — SSO flow can't be curl'd)
+#    Open https://revflow-dev.axgsolutions.com/ and sign in with AUTH_USERNAME/AUTH_PASSWORD
 
 # 6. POM locator is at baseline
-grep "pickup_location_input" pages/booking_page.py
-# Should show: page.locator("input[placeholder='Location']")
+grep "grid_rows" pages/task_list_page.py
+# Should show: page.locator(".arw-grid-table__row")
 ```
 
 ---
@@ -300,8 +287,8 @@ grep "pickup_location_input" pages/booking_page.py
 | GitHub MCP fails to create branch | Token expired or branch already exists | Rotate token in `.mcp.json`; delete stale branch |
 | Jira MCP returns 401 | Token expired | Re-generate Jira API token at `id.atlassian.com` |
 | Playwright browser won't launch | Missing deps | `python3 -m playwright install chromium --with-deps` |
-| Self-heal patches 0 locators | Old selector string not verbatim in POM | `git checkout pages/booking_page.py` to restore baseline |
+| Self-heal patches 0 locators | Old selector string not verbatim in POM | `git checkout pages/task_list_page.py` to restore baseline |
+| RevFlow login fails in tests | `AUTH_USERNAME`/`AUTH_PASSWORD` missing or SSO flow changed | Check `.env`; re-verify the Microsoft SSO steps in `pages/login_page.py` |
 | Port 8765 already in use | Previous server still running | `lsof -ti:8765 | xargs kill` |
 | Port 5173 already in use | Previous Vite dev server | `lsof -ti:5173 | xargs kill` |
-| Swagger MCP returns 0 endpoints | API spec unreachable | Check VPN / network; verify `beta.drivejoulez.com:8443` is up |
 | `pytest` not found | Wrong Python env | Use `/opt/miniconda3/bin/pytest` explicitly |

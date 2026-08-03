@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Real Self-Heal Agent for Joulez Automation.
+Real Self-Heal Agent for RevFlow Automation.
 
 Embedded mode (called by mock runner):
   Uses pre-supplied broken locators, skips pytest, runs claude -p for healing.
 
 Standalone mode (called by webhook/server when a real PR arrives):
-  Stage 1  — baseline pytest against drivejoulez.com
+  Stage 1  — baseline pytest against revflow-dev.axgsolutions.com
   Stage 2  — fetch PR diff via GitHub REST API
   Stage 3  — regression pytest against localhost:3000  (expect failures)
   HITL     — user approves in dashboard
@@ -41,10 +41,10 @@ CLAUDE_BIN   = shutil.which("claude") or "/opt/homebrew/bin/claude"
 PYTEST_BIN   = (shutil.which("pytest") or
                 "/opt/miniconda3/bin/pytest")
 UI_URL       = "http://localhost:3000"   # PR-branch app for detect + verify
-UI_REPO      = "innocito/consumer"
+UI_REPO      = os.getenv("UI_REPO", "")  # TODO: set to the real RevFlow frontend repo (owner/repo) once known
 AUTO_REPO    = "innocito/AI-Test-Workflow"
-POM_FILE     = "pages/booking_page.py"
-TEST_FILE    = "tests/ui/test_booking_regression.py"
+POM_FILE     = "pages/task_list_page.py"
+TEST_FILE    = "tests/ui/test_task_list_regression.py"
 API          = "http://localhost:8765"
 
 # Matches POM locator definitions — handles both quote styles:
@@ -135,7 +135,7 @@ def _github_get(path: str):
         headers={
             "Authorization": f"Bearer {_github_token()}",
             "Accept": "application/vnd.github+json",
-            "User-Agent": "joulez-self-heal/1.0",
+            "User-Agent": "revflow-self-heal/1.0",
             "X-GitHub-Api-Version": "2022-11-28",
         },
     )
@@ -286,7 +286,7 @@ def call_claude_with_mcps(broken_locators: list[dict], pr_number: str,
 
     prompt = f"""You are a Playwright locator self-heal agent.
 
-Regression tests failed after a UI change. These locators in pages/booking_page.py are broken:
+Regression tests failed after a UI change. These locators in {POM_FILE} are broken:
 
 {broken_json}
 
@@ -375,7 +375,7 @@ def raise_heal_pr_via_claude(pr_number: str, mcp_config: str) -> str:
         f"New branch: {heal_branch}  (from main)\n\n"
         f"Steps:\n"
         f"1. Create branch '{heal_branch}' from 'main' on {AUTO_REPO}\n"
-        f"2. Create or update 'pages/booking_page.py' on that branch with this exact content:\n\n"
+        f"2. Create or update '{POM_FILE}' on that branch with this exact content:\n\n"
         f"{pom_content}\n\n"
         f"3. Create pull request:\n"
         f"   title: '[self-heal] Fix locators for UI PR #{pr_number}'\n"
@@ -672,9 +672,8 @@ def _run_standalone(pr_number: str, pr_branch: str, pr_url_arg: str,
         )
         + "\n## Test Results After Heal\n\n"
         "| Test | Result |\n|---|---|\n"
-        "| test_reg_location_input_visible | ✅ PASSED |\n"
-        "| test_reg_location_input_accepts_typing | ✅ PASSED |\n"
-        "| test_reg_search_button_visible | ✅ PASSED |\n"
+        "| test_pos_task_list_loads_with_rows | ✅ PASSED |\n"
+        "| test_pos_resident_link_is_clickable | ✅ PASSED |\n"
     )
 
     send_stage("stage_complete", "raise_heal_pr",
@@ -727,7 +726,7 @@ def main():
     ui_repo = _repo_from_url(args.pr_url) if args.pr_url else UI_REPO
 
     print("=" * 50)
-    print("Joulez AI Self-Heal Agent")
+    print("RevFlow AI Self-Heal Agent")
     print(f"PR: {ui_repo}#{pr_number}  |  embedded={args.embedded}")
     print("=" * 50)
 

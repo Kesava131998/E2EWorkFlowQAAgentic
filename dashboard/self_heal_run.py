@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Self-Heal Demo runner for the Joulez automation dashboard.
+Self-Heal Demo runner for the RevFlow automation dashboard.
 
 Tells the story of a UI PR that breaks locators → regression fails →
 AI agent inspects the DOM + diff → Claude heals the selectors →
@@ -14,6 +14,7 @@ Usage:
 """
 
 import argparse
+import os
 import re
 import shutil
 import subprocess
@@ -33,19 +34,19 @@ project_root = Path(__file__).parent.parent
 API = "http://localhost:8765"
 
 # ── UI repo PR details ──────────────────────────────────────────────────────
-UI_REPO        = "innocito/consumer"
+UI_REPO        = os.getenv("UI_REPO", "")  # TODO: set to the real RevFlow frontend repo (owner/repo) once known
 UI_PR_NUMBER   = 7
-UI_PR_BRANCH   = "demo/search-ui-refactor"
+UI_PR_BRANCH   = "demo/task-list-grid-refactor"
 UI_PR_URL      = f"https://github.com/{UI_REPO}/pull/{UI_PR_NUMBER}"
-UI_PR_TITLE    = "refactor(search): rename component class names for BEM compliance"
+UI_PR_TITLE    = "refactor(task-list): rename grid row class for design-system compliance"
 
 # ── What changed in the UI PR ───────────────────────────────────────────────
 UI_CHANGES = [
     {
-        "file":    "src/Components/SearchComponent/PickupLocation.js",
-        "old_val": "Location",
-        "new_val": "Pickup Location",
-        "type":    "placeholder",
+        "file":    "src/app/task-list/task-list.component.html",
+        "old_val": "arw-grid-table__row",
+        "new_val": "arw-data-grid__row",
+        "type":    "css-class",
     },
 ]
 
@@ -53,8 +54,8 @@ UI_CHANGES = [
 FAILING_TESTS = [
     {
         "id":      "REG-01",
-        "fn":      "test_reg_location_input_visible",
-        "locator": "input[placeholder='Location']",
+        "fn":      "test_pos_task_list_loads_with_rows",
+        "locator": ".arw-grid-table__row",
         "error":   "TimeoutError: Locator not found after 5000ms",
     },
 ]
@@ -62,9 +63,9 @@ FAILING_TESTS = [
 # ── Healed locators (what Claude will produce) ──────────────────────────────
 HEALED_LOCATORS = [
     {
-        "old": 'page.locator("input[placeholder=\'Location\']")',
-        "new": 'page.locator("input[placeholder=\'Pickup Location\']")',
-        "reasoning": "PR diff: placeholder attr changed from 'Location' → 'Pickup Location' in PickupLocation.js",
+        "old": 'page.locator(".arw-grid-table__row")',
+        "new": 'page.locator(".arw-data-grid__row")',
+        "reasoning": "PR diff: grid row class renamed from 'arw-grid-table__row' → 'arw-data-grid__row' in task-list.component.html",
     },
 ]
 
@@ -75,11 +76,11 @@ HEAL_PR_NUMBER = 5
 HEAL_PR_URL    = f"https://github.com/{AUTO_REPO}/pull/{HEAL_PR_NUMBER}"
 HEAL_COMMIT    = "f3a91bc"
 
-# ── Broken locators passed to the real agent (matches booking_page.py attrs) ─
+# ── Broken locators passed to the real agent (matches task_list_page.py attrs) ─
 BROKEN_LOCATORS = [
     {
-        "id":          "pickup_location_input",
-        "old_locator": "input[placeholder='Location']",
+        "id":          "grid_rows",
+        "old_locator": ".arw-grid-table__row",
         "error":       "TimeoutError: Locator not found after 5000ms",
     },
 ]
@@ -205,12 +206,12 @@ class Runner:
     # ── Stage 1: Run regression against deployed site ─────────────────────
 
     def run_regression(self):
-        self.stage_start("run_regression", "Running regression against drivejoulez.com…")
-        self.log("pytest tests/ui/test_booking_regression.py -v", stage="run_regression")
+        self.stage_start("run_regression", "Running regression against revflow-dev.axgsolutions.com…")
+        self.log("pytest tests/ui/test_task_list_regression.py -v", stage="run_regression")
         self.sleep(1.0)
         self.log("Launching Chromium (headless)…", stage="run_regression")
         self.sleep(0.8)
-        self.log("Navigating → https://drivejoulez.com", stage="run_regression")
+        self.log("Navigating → https://revflow-dev.axgsolutions.com/tasks", stage="run_regression")
         self.sleep(1.2)
         for t in FAILING_TESTS:
             self.sleep(0.6)
@@ -230,11 +231,11 @@ class Runner:
         return self.hitl(
             checkpoint_id="approve-heal",
             message=(
-                f"2 regression tests failed on drivejoulez.com.\n\n"
+                f"2 regression tests failed on revflow-dev.axgsolutions.com.\n\n"
                 f"The self-heal agent will:\n"
                 f"  1. Inspect the live DOM via Playwright MCP\n"
                 f"  2. Identify what selectors changed\n"
-                f"  3. Patch booking_page.py with correct locators\n"
+                f"  3. Patch task_list_page.py with correct locators\n"
                 f"  4. Verify the fix against localhost:3000\n\n"
                 f"Approve to proceed?"
             ),
@@ -251,27 +252,27 @@ class Runner:
     # ── Stage 4: DOM inspection ───────────────────────────────────────────
 
     def run_inspect_dom(self):
-        self.stage_start("inspect_dom", "Playwright inspecting drivejoulez.com DOM…")
-        self.log("Launching Playwright against https://drivejoulez.com…", stage="inspect_dom")
+        self.stage_start("inspect_dom", "Playwright inspecting revflow-dev.axgsolutions.com DOM…")
+        self.log("Launching Playwright against https://revflow-dev.axgsolutions.com/tasks…", stage="inspect_dom")
         self.sleep(0.8)
-        self.log("page.goto('https://drivejoulez.com', wait_until='networkidle')", stage="inspect_dom")
+        self.log("page.goto('https://revflow-dev.axgsolutions.com/tasks', wait_until='networkidle')", stage="inspect_dom")
         self.sleep(1.2)
-        self.log("Page loaded  ✓  Taking DOM snapshot of search area…", "success", stage="inspect_dom")
+        self.log("Page loaded  ✓  Taking DOM snapshot of Task List grid…", "success", stage="inspect_dom")
         self.sleep(0.8)
-        self.log("Locating element matching: input[placeholder='Location']…", stage="inspect_dom")
+        self.log("Locating element matching: .arw-grid-table__row…", stage="inspect_dom")
         self.sleep(0.6)
         self.log("  → Element NOT found with old selector", "error", stage="inspect_dom")
         self.sleep(0.4)
-        self.log("  → Scanning nearby input elements…", stage="inspect_dom")
+        self.log("  → Scanning nearby grid row elements…", stage="inspect_dom")
         self.sleep(0.7)
-        self.log("  → Found: <input placeholder=\"Pickup Location\" class=\"inputOptionBox\">", "success", stage="inspect_dom")
+        self.log("  → Found: <div class=\"arw-data-grid__row\" role=\"link\">", "success", stage="inspect_dom")
         self.sleep(0.5)
         self.log("DOM snapshot captured  ·  1 candidate replacement identified", "success", stage="inspect_dom")
         self.stage_done("inspect_dom", "DOM inspected — 1 replacement candidate found", {
             "selectors_found": [
-                'input[placeholder="Pickup Location"]',
+                '.arw-data-grid__row',
             ],
-            "url": "https://drivejoulez.com",
+            "url": "https://revflow-dev.axgsolutions.com/tasks",
         })
 
     # ── Stage 5: Claude heals ─────────────────────────────────────────────
@@ -294,7 +295,7 @@ class Runner:
 
     def run_apply_heal(self) -> bool:
         """Returns True if the agent healed successfully, False otherwise."""
-        self.stage_start("apply_heal", "Invoking real Joulez Self-Heal Agent…")
+        self.stage_start("apply_heal", "Invoking real RevFlow Self-Heal Agent…")
         self.log(
             f"python scripts/self_heal_agent.py --embedded --pr-number {UI_PR_NUMBER}",
             stage="apply_heal",
@@ -329,7 +330,7 @@ class Runner:
 
     def run_verify_heal(self):
         self.stage_start("verify_heal", "Re-running regression with healed locators against localhost:3000…")
-        self.log("pytest tests/ui/test_booking_regression.py -v --base-url=http://localhost:3000",
+        self.log("pytest tests/ui/test_task_list_regression.py -v --base-url=http://localhost:3000",
                  stage="verify_heal")
         self.sleep(1.0)
         self.log("Launching Chromium…", stage="verify_heal")
@@ -353,10 +354,10 @@ class Runner:
         heal_branch = HEAL_BRANCH
         self.stage_start("raise_heal_pr", f"Raising real heal PR on {AUTO_REPO} via GitHub MCP…")
 
-        pom_path = project_root / "pages" / "booking_page.py"
+        pom_path = project_root / "pages" / "task_list_page.py"
         pom_content = pom_path.read_text(encoding="utf-8") if pom_path.exists() else ""
 
-        self.log(f"Branch: {heal_branch} → main  |  file: pages/booking_page.py", stage="raise_heal_pr")
+        self.log(f"Branch: {heal_branch} → main  |  file: pages/task_list_page.py", stage="raise_heal_pr")
         self.log(f"claude -p → mcp__github__create_branch + create_or_update_file + create_pull_request",
                  stage="raise_heal_pr")
 
@@ -366,7 +367,7 @@ class Runner:
             f"New branch: {heal_branch}  (from main)\n\n"
             f"Steps to perform:\n"
             f"1. Create branch '{heal_branch}' from 'main' on repo {AUTO_REPO}\n"
-            f"2. Create or update file 'pages/booking_page.py' on that branch "
+            f"2. Create or update file 'pages/task_list_page.py' on that branch "
             f"with this exact content (no changes — just commit the healed version):\n\n"
             f"{pom_content}\n\n"
             f"3. Create a pull request:\n"
@@ -374,7 +375,7 @@ class Runner:
             f"   body: '## Self-Heal\\n\\n"
             f"Automated agent patched Playwright locators broken by UI PR #{UI_PR_NUMBER} "
             f"({UI_PR_TITLE}).\\n\\n"
-            f"### Root cause\\nPlaceholder changed `Location → Pickup Location` in PickupLocation.js.\\n\\n"
+            f"### Root cause\\nGrid row class renamed `arw-grid-table__row → arw-data-grid__row` in task-list.component.html.\\n\\n"
             f"### Verification\\nAll regression tests pass with healed selectors.'\n"
             f"   head: {heal_branch}\n"
             f"   base: main\n\n"
@@ -436,7 +437,7 @@ class Runner:
     def run(self):
         print()
         print("  ╔══════════════════════════════════════════════╗")
-        print("  ║  Joulez · Self-Heal Demo                     ║")
+        print("  ║  RevFlow · Self-Heal Demo                    ║")
         print(f"  ║  UI PR #{UI_PR_NUMBER}: {UI_PR_BRANCH[:30]:<30} ║")
         print("  ╚══════════════════════════════════════════════╝")
         print()
@@ -513,7 +514,7 @@ class Runner:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Self-Heal demo runner for Joulez dashboard")
+    parser = argparse.ArgumentParser(description="Self-Heal demo runner for RevFlow dashboard")
     speed_group = parser.add_mutually_exclusive_group()
     speed_group.add_argument("--fast",    action="store_true", help="3× faster")
     speed_group.add_argument("--instant", action="store_true", help="No delays")

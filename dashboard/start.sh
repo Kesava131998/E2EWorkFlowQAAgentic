@@ -21,7 +21,7 @@ PY_VER=$("$PY" -c "import sys; print(f'{sys.version_info.major}.{sys.version_inf
 
 echo -e "${CYAN}"
 echo "  ╔══════════════════════════════════════╗"
-echo "  ║   Joulez · E2E Workflow Dashboard    ║"
+echo "  ║   RevFlow · E2E Workflow Dashboard    ║"
 echo "  ╚══════════════════════════════════════╝"
 echo -e "${NC}"
 echo -e "  Using Python $PY_VER at $PY"

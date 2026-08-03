@@ -2,8 +2,8 @@
 """
 Locator decay simulator for the self-heal demo.
 
-Targets two locators in pages/booking_page.py that are exercised by
-tests/ui/test_booking_regression.py.  Supports break and restore.
+Targets two locators in pages/task_list_page.py that are exercised by
+tests/ui/test_task_list_regression.py.  Supports break and restore.
 
 Usage:
   python scripts/break_locators.py --break-locators
@@ -13,17 +13,17 @@ import argparse
 import os
 import sys
 
-PAGE_FILE = os.path.join("pages", "booking_page.py")
+PAGE_FILE = os.path.join("pages", "task_list_page.py")
 
 # ── Locator pairs: (real, broken) ──────────────────────────────────────────
 LOCATORS = [
     (
-        'page.locator("input[placeholder=\'Location\']")',
-        'page.locator("input[placeholder=\'BrokenLocation\']")',
+        'page.locator(".arw-grid-table__row")',
+        'page.locator(".arw-broken-grid-table__row")',
     ),
     (
-        'page.locator(".searchIconContainer")',
-        'page.locator(".brokenSearchIconContainer")',
+        'page.locator(".arw-grid-table__cell")',
+        'page.locator(".arw-broken-grid-table__cell")',
     ),
 ]
 

@@ -1,6 +1,6 @@
 # E2E Workflow Dashboard
 
-Real-time visualization for the Joulez e2e test automation workflow.
+Real-time visualization for the RevFlow e2e test automation workflow.
 
 ## Quick Start
 
