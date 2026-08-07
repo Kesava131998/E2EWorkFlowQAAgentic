@@ -2,7 +2,7 @@
 Date    : 2026-08-07
 Repo    : manohar10173/Revflow-e2e-workflow
 Branch  : scrum-23-fe-add-a-payment-schedule
-PR      : (pending)
+PR      : https://github.com/manohar10173/Revflow-e2e-workflow/pull/9 (draft)
 Jira    : https://vwiki281-1785763863770.atlassian.net/browse/SCRUM-23
 
 ## Duplicate-Coverage Note
@@ -26,8 +26,8 @@ instead of generating a duplicate test file.
 | Test Run | ⏭️ | Skipped by user choice at test-execution-scope checkpoint — not executed this run |
 | QA TC Execution → Done | ⏭️ | SCRUM-25 not transitioned — execution did not occur this run |
 | Postman Export | ⏭️ | Skipped — user chose UI tests only, no API test scope |
-| Commit + Push | ✅ | See commit hash below |
-| PR Raised | ✅ | Draft PR — see link below |
+| Commit + Push | ✅ | ca70af2 |
+| PR Raised | ✅ | PR #9 (draft) |
 | PR Review | (pending — Stage 9) |
 
 ## Coverage Delta
