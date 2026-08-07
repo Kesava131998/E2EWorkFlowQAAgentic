@@ -1,0 +1,77 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+TC-01,AC1,Happy Path,High,"""Show Primary Only"" toggle is visible on the Facility & Role View tab","User is logged in as an Org Admin; User Management page is loaded","N/A","1. Navigate to the User Management page
+2. Verify the ""Facility & Role View"" tab is visible and clickable
+3. Click the ""Facility & Role View"" tab
+4. Verify the ""Show Primary Only"" toggle control is visible in the tab header area","1. User Management page loads with User View tab active by default
+2. ""Facility & Role View"" tab is visible and clickable
+3. Facility & Role View grid loads
+4. ""Show Primary Only"" toggle is visible with a label"
+TC-02,AC2,Happy Path,High,"Toggle is on by default when the tab is first opened","User is logged in as an Org Admin; has not previously interacted with the toggle this session","N/A","1. Navigate to the User Management page
+2. Click the ""Facility & Role View"" tab
+3. Verify the ""Show Primary Only"" toggle is visible
+4. Inspect the toggle's checked/aria-checked state","1. User Management page loads
+2. Facility & Role View grid loads
+3. Toggle is visible
+4. Toggle state is ""on"" (checked = true)"
+TC-03,AC3,Happy Path,High,"Enabling the toggle filters the grid to only Primary-marked rows","User is logged in as an Org Admin; a user with both Primary and non-Primary role assignments exists across facilities","Test user with 2 Primary rows and 3 non-Primary rows","1. Navigate to the Facility & Role View tab
+2. Verify toggle is in the ""on"" state
+3. Read the total row count displayed in the grid
+4. Verify each visible row's ""Primary"" column/badge","1. Grid loads with toggle on by default
+2. Toggle shows ""on""
+3. Row count equals 2 (matches Primary rows only)
+4. Every visible row is marked Primary"
+TC-04,AC4,Happy Path,High,"Disabling the toggle shows all role assignments regardless of primary status","Same as TC-03","Same test user as TC-03 (2 Primary + 3 non-Primary rows)","1. Navigate to the Facility & Role View tab with toggle on
+2. Click the ""Show Primary Only"" toggle to switch it off
+3. Read the total row count displayed in the grid
+4. Verify at least one visible row is marked non-Primary","1. Grid shows only the 2 Primary rows
+2. Toggle switches to ""off"" state
+3. Row count equals 5 (all Primary + non-Primary rows)
+4. A non-Primary row is present in the grid"
+TC-05,AC5,Happy Path,High,"Toggle resets to on after a full page reload","User is logged in as an Org Admin; on the Facility & Role View tab with toggle switched off","N/A","1. On the Facility & Role View tab, click the toggle to switch it off
+2. Reload the page
+3. Click the ""Facility & Role View"" tab
+4. Inspect the toggle's checked/aria-checked state","1. Toggle shows ""off""; all rows visible
+2. Page reloads and User Management page loads again
+3. Grid loads
+4. Toggle state is ""on"" again"
+TC-06,AC5,Happy Path,High,"Toggle resets to on after switching away to another tab and back","User is logged in as an Org Admin; on the Facility & Role View tab with toggle switched off","N/A","1. On the Facility & Role View tab, click the toggle to switch it off
+2. Click the ""User View"" tab
+3. Click the ""Facility & Role View"" tab again
+4. Inspect the toggle's checked/aria-checked state","1. Toggle shows ""off""
+2. User View tab becomes active
+3. Facility & Role View grid loads
+4. Toggle state is ""on"" again"
+TC-07,AC6,Happy Path,Medium,"Toggle is not visible on the User View tab","User is logged in as an Org Admin","N/A","1. Navigate to the User Management page
+2. Verify the tab header area for a ""Show Primary Only"" control","1. User View tab is active by default
+2. ""Show Primary Only"" toggle is not present in the DOM/not visible"
+TC-08,AC3,Edge Case,Medium,"Toggle on with a user who has zero Primary role assignments shows an empty grid","User is logged in as an Org Admin; a test user exists with only non-Primary role assignments","Test user with 0 Primary rows, 2 non-Primary rows","1. Navigate to the Facility & Role View tab for the test user
+2. Read the grid's row count / empty-state message
+3. Click the toggle to switch it off
+4. Read the grid's row count","1. Grid loads with toggle on by default
+2. Grid shows 0 rows and displays an empty-state indicator
+3. Toggle shows ""off""
+4. Grid now shows 2 rows"
+TC-09,AC4,Edge Case,Low,"Toggling off then back on returns to the original filtered state (idempotency)","Same as TC-03","Same test user as TC-03","1. Navigate to the Facility & Role View tab (toggle on, 2 rows)
+2. Click toggle off
+3. Click toggle on again
+4. Read the grid's row count","1. Grid shows 2 Primary rows
+2. Grid shows 5 rows
+3. Toggle shows ""on""
+4. Grid shows 2 Primary rows again"
+TC-10,AC6,Negative,Medium,"Toggling on the Facility & Role View tab does not affect the User View tab's rows","User is logged in as an Org Admin; toggle switched off on Facility & Role View tab","N/A","1. On the Facility & Role View tab, note the row count with toggle off
+2. Click the ""User View"" tab
+3. Read the User View tab's row count","1. Row count recorded (e.g. 5)
+2. User View grid loads
+3. Row count is unchanged from before visiting Facility & Role View"
+TC-11,AC1,Edge Case,Low,"Toggle is keyboard-operable and exposes an accessible name","User is logged in as an Org Admin; on the Facility & Role View tab","N/A","1. Navigate to the Facility & Role View tab
+2. Tab (keyboard) focus to the toggle control
+3. Press Space/Enter to activate the toggle
+4. Inspect the toggle's accessible name (aria-label/label text)","1. Grid and toggle load
+2. Toggle receives visible focus
+3. Toggle state switches (on to off)
+4. Accessible name is present and describes ""Show Primary Only"""
+TC-12,AC1,RBAC,High,"A Viewer-role user cannot access the Facility & Role View tab (or its toggle)","User is logged in with a Viewer role account","Viewer-role credentials","1. Log in as a Viewer-role user
+2. Attempt to click the ""Facility & Role View"" tab
+3. Verify the ""Show Primary Only"" toggle is not accessible","1. Login succeeds, User Management page loads (or is restricted per role policy)
+2. Tab is disabled, hidden, or access is denied per role policy
+3. Toggle is not visible/interactable for this role"
