@@ -4,7 +4,7 @@ import {
   Ticket, GitBranch, Search, FileText, Settings, FlaskConical,
   Send, Package, GitPullRequest, CheckCircle, Eye,
   RotateCcw, MessageSquareDot,
-  Zap, AlertCircle, Wrench, Microscope, GitMerge, Minus,
+  Zap, AlertCircle, Wrench, Microscope, GitMerge, Minus, ListChecks,
 } from 'lucide-react'
 import { STAGES, SELF_HEAL_WEBHOOK_STAGES, SELF_HEAL_SKILL_STAGES, STAGE_STATUS } from '../constants/stages.js'
 import { InnocitoLogo } from './Header.jsx'
@@ -13,14 +13,14 @@ import { InnocitoLogo } from './Header.jsx'
 
 function Chip({ children, color = 'gray' }) {
   const colors = {
-    gray:    'bg-gray-800 text-gray-400 border-gray-700',
-    cyan:    'bg-cyan-900/40 text-cyan-300 border-cyan-700/50',
-    green:   'bg-emerald-900/40 text-emerald-300 border-emerald-700/50',
-    red:     'bg-red-900/40 text-red-300 border-red-700/50',
-    amber:   'bg-amber-900/40 text-amber-300 border-amber-700/50',
-    purple:  'bg-purple-900/40 text-purple-300 border-purple-700/50',
-    blue:    'bg-blue-900/40 text-blue-300 border-blue-700/50',
-    pink:    'bg-pink-900/40 text-pink-300 border-pink-700/50',
+    gray: 'bg-gray-800 text-gray-400 border-gray-700',
+    cyan: 'bg-cyan-900/40 text-cyan-300 border-cyan-700/50',
+    green: 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50',
+    red: 'bg-red-900/40 text-red-300 border-red-700/50',
+    amber: 'bg-amber-900/40 text-amber-300 border-amber-700/50',
+    purple: 'bg-purple-900/40 text-purple-300 border-purple-700/50',
+    blue: 'bg-blue-900/40 text-blue-300 border-blue-700/50',
+    pink: 'bg-pink-900/40 text-pink-300 border-pink-700/50',
   }
   return (
     <span className={`text-[9px] font-mono border px-1.5 py-0.5 rounded ${colors[color] || colors.gray}`}>
@@ -48,7 +48,7 @@ function Row({ label, children }) {
 
 // ─── E2E workflow stage cards ─────────────────────────────────────────────────
 
-const STATUS_COLOR   = { 'In Progress': 'amber', 'In Review': 'blue', 'Done': 'green', 'To Do': 'gray' }
+const STATUS_COLOR = { 'In Progress': 'amber', 'In Review': 'blue', 'Done': 'green', 'To Do': 'gray' }
 const PRIORITY_COLOR = { 'High': 'red', 'Medium': 'amber', 'Low': 'gray' }
 const DECISION_COLOR = { 'APPROVE': 'green', 'REQUEST_CHANGES': 'red', 'COMMENT': 'amber' }
 
@@ -57,12 +57,12 @@ function JiraFetchCard({ d }) {
     <Card>
       <div className="flex items-center gap-1.5 flex-wrap">
         <Chip color="purple">{d.ticket}</Chip>
-        {d.status   && <Chip color={STATUS_COLOR[d.status]     || 'gray'}>{d.status}</Chip>}
+        {d.status && <Chip color={STATUS_COLOR[d.status] || 'gray'}>{d.status}</Chip>}
         {d.priority && <Chip color={PRIORITY_COLOR[d.priority] || 'gray'}>{d.priority}</Chip>}
       </div>
       {d.summary && <p className="text-[11px] text-gray-200 font-mono leading-snug">{d.summary}</p>}
       <div className="flex items-center justify-between text-[9px] font-mono text-gray-500">
-        {d.assignee  && <span>👤 {d.assignee}</span>}
+        {d.assignee && <span>👤 {d.assignee}</span>}
         {d.acs_found && <span>{d.acs_found} ACs</span>}
       </div>
     </Card>
@@ -77,6 +77,19 @@ function BranchCard({ d }) {
         <span className="text-[10px] font-mono text-emerald-300 break-all leading-snug">{d.branch}</span>
       </div>
       {d.base && <Row label="from"><span className="text-gray-400">{d.base}</span></Row>}
+    </Card>
+  )
+}
+
+function QaSubtasksCard({ d }) {
+  return (
+    <Card>
+      <Row label="design">
+        <span className="text-teal-300">{d.qa_design_key || '—'}</span>
+      </Row>
+      <Row label="execution">
+        <span className="text-teal-300">{d.qa_exec_key || '—'}</span>
+      </Row>
     </Card>
   )
 }
@@ -101,7 +114,7 @@ function TestCasesCard({ d }) {
         <span className="text-[9px] text-gray-500 font-mono">{d.acs_covered} ACs</span>
       </div>
       <div className="flex gap-1.5">
-        {d.ui_cases  != null && <Chip color="cyan">{d.ui_cases} UI</Chip>}
+        {d.ui_cases != null && <Chip color="cyan">{d.ui_cases} UI</Chip>}
         {d.api_cases != null && <Chip color="blue">{d.api_cases} API</Chip>}
       </div>
     </Card>
@@ -132,7 +145,7 @@ function RunTestsCard({ d }) {
       </div>
       <div className="flex items-center gap-1.5 flex-wrap">
         {d.browser && <Chip color="gray">{d.browser}</Chip>}
-        {d.scope   && <Chip color="gray">{d.scope}</Chip>}
+        {d.scope && <Chip color="gray">{d.scope}</Chip>}
       </div>
     </Card>
   )
@@ -188,7 +201,7 @@ function UpdateJiraCard({ d }) {
   return (
     <Card>
       <div className="flex items-center gap-1.5">
-        {d.ticket     && <Chip color="purple">{d.ticket}</Chip>}
+        {d.ticket && <Chip color="purple">{d.ticket}</Chip>}
         <span className="text-gray-600 text-[10px]">→</span>
         {d.transition && <Chip color={STATUS_COLOR[d.transition] || 'blue'}>{d.transition}</Chip>}
       </div>
@@ -203,7 +216,7 @@ function PrReviewCard({ d }) {
       <Chip color={DECISION_COLOR[decision] || 'gray'}>{decision || 'Reviewed'}</Chip>
       <div className="flex items-center gap-3 text-[9px] font-mono text-gray-500">
         {d.issues_found != null && <span>{d.issues_found} issues</span>}
-        {d.suggestions  != null && <span>{d.suggestions} suggestions</span>}
+        {d.suggestions != null && <span>{d.suggestions} suggestions</span>}
       </div>
     </Card>
   )
@@ -228,7 +241,7 @@ function RunRegressionCard({ d }) {
   return (
     <Card>
       <div className="flex items-center gap-2 font-mono">
-        <span className="text-red-400   text-[11px]">✗ {d.failed  ?? '—'} failed</span>
+        <span className="text-red-400   text-[11px]">✗ {d.failed ?? '—'} failed</span>
         <span className="text-emerald-400 text-[11px]">✓ {d.passed ?? '—'} passed</span>
       </div>
       {d.error_type && <Chip color="red">{d.error_type}</Chip>}
@@ -276,7 +289,7 @@ function VerifyHealCard({ d }) {
     <Card>
       <div className="flex items-center gap-2 font-mono">
         <span className="text-emerald-400 text-[11px]">✓ {d.passed ?? '—'}</span>
-        <span className="text-gray-500  text-[11px]">/ {d.total  ?? '—'} tests</span>
+        <span className="text-gray-500  text-[11px]">/ {d.total ?? '—'} tests</span>
         {d.duration_s && <span className="text-gray-600 text-[10px] ml-auto">{d.duration_s}s</span>}
       </div>
       <Chip color={allPassing ? 'green' : 'red'}>
@@ -306,46 +319,48 @@ function RaiseHealPrCard({ d }) {
 // ─── Card registries ──────────────────────────────────────────────────────────
 
 const STAGE_CARDS = {
-  jira_fetch:        JiraFetchCard,
-  branch_create:     BranchCard,
+  jira_fetch: JiraFetchCard,
+  qa_subtasks: QaSubtasksCard,
+  branch_create: BranchCard,
   swagger_discovery: SwaggerCard,
-  test_cases:        TestCasesCard,
-  generate_tests:    GenerateTestsCard,
-  run_tests:         RunTestsCard,
-  postman_export:    PostmanCard,
-  commit_push:       CommitCard,
-  raise_pr:          RaisePrCard,
-  update_jira:       UpdateJiraCard,
-  pr_review:         PrReviewCard,
+  test_cases: TestCasesCard,
+  generate_tests: GenerateTestsCard,
+  run_tests: RunTestsCard,
+  postman_export: PostmanCard,
+  commit_push: CommitCard,
+  raise_pr: RaisePrCard,
+  update_jira: UpdateJiraCard,
+  pr_review: PrReviewCard,
   // self-heal (webhook + skill share the same card components)
-  fetch_pr_diff:     FetchPrDiffCard,
-  run_regression:    RunRegressionCard,
-  inspect_dom:       InspectDomCard,
-  apply_heal:        ApplyHealCard,
-  verify_heal:       VerifyHealCard,
-  raise_heal_pr:     RaiseHealPrCard,
+  fetch_pr_diff: FetchPrDiffCard,
+  run_regression: RunRegressionCard,
+  inspect_dom: InspectDomCard,
+  apply_heal: ApplyHealCard,
+  verify_heal: VerifyHealCard,
+  raise_heal_pr: RaiseHealPrCard,
 }
 
 const STAGE_ICONS = {
   // e2e workflow
-  jira_fetch:        Ticket,
-  branch_create:     GitBranch,
+  jira_fetch: Ticket,
+  qa_subtasks: ListChecks,
+  branch_create: GitBranch,
   swagger_discovery: Search,
-  test_cases:        FileText,
-  generate_tests:    Settings,
-  run_tests:         FlaskConical,
-  postman_export:    Send,
-  commit_push:       Package,
-  raise_pr:          GitPullRequest,
-  update_jira:       CheckCircle,
-  pr_review:         Eye,
+  test_cases: FileText,
+  generate_tests: Settings,
+  run_tests: FlaskConical,
+  postman_export: Send,
+  commit_push: Package,
+  raise_pr: GitPullRequest,
+  update_jira: CheckCircle,
+  pr_review: Eye,
   // self-heal (webhook + skill)
-  fetch_pr_diff:     GitPullRequest,
-  run_regression:    FlaskConical,
-  inspect_dom:       Microscope,
-  apply_heal:        Wrench,
-  verify_heal:       CheckCircle,
-  raise_heal_pr:     GitMerge,
+  fetch_pr_diff: GitPullRequest,
+  run_regression: FlaskConical,
+  inspect_dom: Microscope,
+  apply_heal: Wrench,
+  verify_heal: CheckCircle,
+  raise_heal_pr: GitMerge,
 }
 
 // ─── Stage node internals ─────────────────────────────────────────────────────
@@ -355,7 +370,7 @@ function StageProperties({ stage, events, isSelfHeal }) {
     ['stage_start', 'stage_complete', 'stage_error'].includes(e.type) && e.stage === stage.id
   )
   const completeEvent = [...stageEvents].reverse().find(e => e.type === 'stage_complete')
-  const activeEvent   = completeEvent || [...stageEvents].reverse()[0]
+  const activeEvent = completeEvent || [...stageEvents].reverse()[0]
 
   if (!activeEvent) return null
 
@@ -379,10 +394,10 @@ function StageProperties({ stage, events, isSelfHeal }) {
         {hasRichData
           ? <RichCard d={d} />
           : activeEvent.message && (
-              <div className="bg-white/[0.03] rounded-lg px-2.5 py-2 border border-white/[0.07]">
-                <p className="text-[11px] text-gray-300 font-mono leading-relaxed">{activeEvent.message}</p>
-              </div>
-            )
+            <div className="bg-white/[0.03] rounded-lg px-2.5 py-2 border border-white/[0.07]">
+              <p className="text-[11px] text-gray-300 font-mono leading-relaxed">{activeEvent.message}</p>
+            </div>
+          )
         }
       </div>
     </motion.div>
@@ -391,8 +406,8 @@ function StageProperties({ stage, events, isSelfHeal }) {
 
 function VerticalConnector({ leftStatus, isSelfHeal }) {
   const isComplete = leftStatus === STAGE_STATUS.COMPLETE
-  const isActive   = leftStatus === STAGE_STATUS.ACTIVE
-  const activeBar  = isSelfHeal
+  const isActive = leftStatus === STAGE_STATUS.ACTIVE
+  const activeBar = isSelfHeal
     ? 'bg-gradient-to-b from-purple-500/40 via-purple-400 to-purple-500/40'
     : 'bg-gradient-to-b from-indigo-500/40 via-indigo-400 to-indigo-500/40'
 
@@ -420,33 +435,33 @@ function VerticalConnector({ leftStatus, isSelfHeal }) {
 }
 
 function VerticalStageNode({ stage, status, events, isSelfHeal }) {
-  const isActive   = status === STAGE_STATUS.ACTIVE
+  const isActive = status === STAGE_STATUS.ACTIVE
   const isComplete = status === STAGE_STATUS.COMPLETE
-  const isError    = status === STAGE_STATUS.ERROR
-  const isSkipped  = status === STAGE_STATUS.SKIPPED
+  const isError = status === STAGE_STATUS.ERROR
+  const isSkipped = status === STAGE_STATUS.SKIPPED
 
-  const activeRing  = isSelfHeal ? 'ring-purple-400/50' : 'ring-white/50'
+  const activeRing = isSelfHeal ? 'ring-purple-400/50' : 'ring-white/50'
   const activePulse = isSelfHeal ? 'border-purple-400/30' : 'border-white/20'
 
   const nodeClasses = isActive
     ? `bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.15)] ring-1 ${activeRing}`
     : isComplete
-    ? 'bg-brand-success/10 text-brand-success ring-1 ring-brand-success/30'
-    : isError
-    ? 'bg-brand-danger/10 text-brand-danger ring-1 ring-brand-danger/30'
-    : isSkipped
-    ? 'bg-[#111113] text-gray-700 ring-1 ring-white/[0.03]'
-    : 'bg-[#111113] text-gray-600 ring-1 ring-white/5'
+      ? 'bg-brand-success/10 text-brand-success ring-1 ring-brand-success/30'
+      : isError
+        ? 'bg-brand-danger/10 text-brand-danger ring-1 ring-brand-danger/30'
+        : isSkipped
+          ? 'bg-[#111113] text-gray-700 ring-1 ring-white/[0.03]'
+          : 'bg-[#111113] text-gray-600 ring-1 ring-white/5'
 
   const labelClasses = isActive
     ? 'text-gray-100 font-semibold'
     : isComplete
-    ? 'text-gray-400'
-    : isError
-    ? 'text-brand-danger'
-    : isSkipped
-    ? 'text-gray-700 line-through decoration-gray-800'
-    : 'text-gray-600'
+      ? 'text-gray-400'
+      : isError
+        ? 'text-brand-danger'
+        : isSkipped
+          ? 'text-gray-700 line-through decoration-gray-800'
+          : 'text-gray-600'
 
   const Icon = STAGE_ICONS[stage.id]
 
@@ -502,7 +517,7 @@ function VerticalStageNode({ stage, status, events, isSelfHeal }) {
 
 function PipelineHeader({ workflowMode }) {
   const isWebhook = workflowMode === 'self_heal_webhook'
-  const isSkill   = workflowMode === 'self_heal_skill'
+  const isSkill = workflowMode === 'self_heal_skill'
   if (isWebhook || isSkill) {
     return (
       <div className="px-6 py-5 border-b border-white/5 shrink-0">
@@ -526,14 +541,14 @@ function PipelineHeader({ workflowMode }) {
 // ─── Pipeline root ────────────────────────────────────────────────────────────
 
 export function Pipeline({ stageStatuses, events, workflowActive, workflowMode = 'e2e', onReset, onTeamsNotify, connected }) {
-  const [confirming, setConfirming]   = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [teamsSending, setTeamsSending] = useState(false)
-  const [teamsSent, setTeamsSent]     = useState(false)
+  const [teamsSent, setTeamsSent] = useState(false)
 
   const isSelfHeal = workflowMode === 'self_heal_webhook' || workflowMode === 'self_heal_skill'
   const activeStages = workflowMode === 'self_heal_webhook' ? SELF_HEAL_WEBHOOK_STAGES
-                     : workflowMode === 'self_heal_skill'   ? SELF_HEAL_SKILL_STAGES
-                     : STAGES
+    : workflowMode === 'self_heal_skill' ? SELF_HEAL_SKILL_STAGES
+      : STAGES
 
   const handleTeams = async () => {
     setTeamsSending(true)
@@ -614,8 +629,8 @@ export function Pipeline({ stageStatuses, events, workflowActive, workflowMode =
             teamsSent
               ? 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50'
               : teamsSending
-              ? 'bg-indigo-900/20 text-indigo-400 border-indigo-700/30 opacity-60 cursor-not-allowed'
-              : 'bg-indigo-900/20 text-indigo-300 border-indigo-700/40 hover:bg-indigo-900/40 hover:border-indigo-500/50',
+                ? 'bg-indigo-900/20 text-indigo-400 border-indigo-700/30 opacity-60 cursor-not-allowed'
+                : 'bg-indigo-900/20 text-indigo-300 border-indigo-700/40 hover:bg-indigo-900/40 hover:border-indigo-500/50',
           ].join(' ')}
         >
           <MessageSquareDot className="w-3.5 h-3.5" />
