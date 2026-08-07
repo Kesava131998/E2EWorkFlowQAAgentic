@@ -26,7 +26,8 @@ Example: `/e2e-workflow SCRUM-1`
 
 ## Dashboard Integration
 
-If `dashboard/server/main.py` is running, all progress and every approval gate in this workflow are driven through the live dashboard at **http://localhost:5173** instead of the terminal. This lets the user watch stages progress and respond to approvals from the browser rather than being prompted inline in chat.
+If `dashboard/server/main.py` is running, all progress and every approval gate in this workflow are driven through the live dashboard at **http://localhost:5173** instead of the terminal. This lets the user watch stages progress and respond to approvals from the browser rather than being prompted inl
+ine in chat.
 
 - **Event calls are fire-and-forget** (`|| true`) — the workflow must keep going even if the server isn't running.
 - **HITL gate calls are blocking** — the workflow genuinely waits for a browser response before proceeding. This is the mechanism used for every `⏸ HITL CHECKPOINT` in this file — the agent must not fall back to asking the question in the chat/terminal when the dashboard is up.
