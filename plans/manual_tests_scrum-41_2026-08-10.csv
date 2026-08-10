@@ -1,0 +1,115 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+1,AC1,Happy Path,High,"The legacy ""Overdue Tasks"" column is removed from the Biller Activity Report","User logged in with Biller Activity Report access; report contains at least one biller row","None","1. Navigate to the Biller Activity Report page
+2. Verify the report grid header row is visible
+3. Inspect the column headers in the grid header row
+4. Verify no column titled ""Overdue Tasks"" is present","1. Report page loads
+2. Grid header row is visible
+3. Column headers are readable
+4. No ""Overdue Tasks"" column header exists anywhere in the grid"
+2,AC8,Happy Path,High,"New columns appear in the correct order: Overdue Open Tasks before Overdue Overpayment Tasks","Report page loaded with the two new columns present","None","1. Navigate to the Biller Activity Report page
+2. Verify the ""Overdue Open Balance Tasks"" column header is visible
+3. Verify the ""Overdue Overpayment Tasks"" column header is visible
+4. Compare the horizontal position (column index) of both headers","1. Report page loads
+2. ""Overdue Open Balance Tasks"" header is visible
+3. ""Overdue Overpayment Tasks"" header is visible
+4. ""Overdue Open Balance Tasks"" column index is lower (appears to the left of) ""Overdue Overpayment Tasks"""
+3,AC2,Happy Path,High,"""Overdue Overpayment Tasks"" shows the correct count for a biller with open overpayment tasks past the Follow Up Date","Biller X has 3 open overpayment tasks with Follow Up Date < today","Biller X = 3 overdue overpayment tasks","1. Navigate to the Biller Activity Report page
+2. Locate the row for Biller X
+3. Verify the ""Overdue Overpayment Tasks"" cell for Biller X is visible
+4. Read the value in the cell","1. Report page loads
+2. Biller X row is visible
+3. Cell is visible
+4. Cell displays ""3"""
+4,AC3,Happy Path,High,"""Overdue Open Balance Tasks"" shows the correct count for a biller with open balance tasks past the Follow Up Date","Biller Y has 5 open balance tasks with Follow Up Date < today","Biller Y = 5 overdue open balance tasks","1. Navigate to the Biller Activity Report page
+2. Locate the row for Biller Y
+3. Verify the ""Overdue Open Balance Tasks"" cell for Biller Y is visible
+4. Read the value in the cell","1. Report page loads
+2. Biller Y row is visible
+3. Cell is visible
+4. Cell displays ""5"""
+5,AC2,Negative,Medium,"Tasks with a Follow Up Date equal to today or in the future are excluded from the overdue overpayment count","Biller Z has 2 open overpayment tasks with Follow Up Date = today/future and 1 with Follow Up Date < today","Biller Z = 2 non-overdue + 1 overdue overpayment task","1. Navigate to the Biller Activity Report page
+2. Locate the row for Biller Z
+3. Verify the ""Overdue Overpayment Tasks"" cell for Biller Z is visible
+4. Read the value in the cell","1. Report page loads
+2. Biller Z row is visible
+3. Cell is visible
+4. Cell displays ""1"" (only the past-due task is counted)"
+6,AC3,Negative,Medium,"Closed/resolved open-balance tasks are excluded from the overdue open balance count","Biller W has 2 closed open-balance tasks with Follow Up Date < today and 1 open task with Follow Up Date < today","Biller W = 2 closed + 1 open overdue task","1. Navigate to the Biller Activity Report page
+2. Locate the row for Biller W
+3. Verify the ""Overdue Open Balance Tasks"" cell for Biller W is visible
+4. Read the value in the cell","1. Report page loads
+2. Biller W row is visible
+3. Cell is visible
+4. Cell displays ""1"" (closed tasks are not counted)"
+7,AC4,Edge Case,High,"A biller with zero overdue overpayment tasks shows 0","Biller V has no open overpayment tasks with Follow Up Date < today","Biller V = 0 overdue overpayment tasks","1. Navigate to the Biller Activity Report page
+2. Locate the row for Biller V
+3. Verify the ""Overdue Overpayment Tasks"" cell for Biller V is visible
+4. Read the value in the cell","1. Report page loads
+2. Biller V row is visible
+3. Cell is visible
+4. Cell displays ""0"""
+8,AC4,Edge Case,High,"A biller with zero overdue open balance tasks shows 0","Biller U has no open balance tasks with Follow Up Date < today","Biller U = 0 overdue open balance tasks","1. Navigate to the Biller Activity Report page
+2. Locate the row for Biller U
+3. Verify the ""Overdue Open Balance Tasks"" cell for Biller U is visible
+4. Read the value in the cell","1. Report page loads
+2. Biller U row is visible
+3. Cell is visible
+4. Cell displays ""0"""
+9,AC5,Happy Path,Medium,"A 0 value renders in green in both new columns","Biller with 0 in either overdue column","Biller V = 0 overdue overpayment tasks","1. Navigate to the Biller Activity Report page
+2. Locate the ""Overdue Overpayment Tasks"" cell showing ""0"" for Biller V
+3. Verify the cell is visible
+4. Inspect the computed text/foreground color of the cell","1. Report page loads
+2. Cell showing ""0"" is located
+3. Cell is visible
+4. Cell text color is green"
+10,AC5,Happy Path,Medium,"A non-zero value renders in red in both new columns","Biller with a non-zero count in either overdue column","Biller X = 3 overdue overpayment tasks","1. Navigate to the Biller Activity Report page
+2. Locate the ""Overdue Overpayment Tasks"" cell showing ""3"" for Biller X
+3. Verify the cell is visible
+4. Inspect the computed text/foreground color of the cell","1. Report page loads
+2. Cell showing ""3"" is located
+3. Cell is visible
+4. Cell text color is red"
+11,AC6,Happy Path,High,"Summary/total row correctly sums the Overdue Open Balance Tasks column","Report contains multiple billers with known Overdue Open Balance Tasks counts","Biller rows summing to a known total, e.g. 5 + 1 + 0 = 6","1. Navigate to the Biller Activity Report page
+2. Read the ""Overdue Open Balance Tasks"" value for each biller row
+3. Verify the summary/total row is visible
+4. Read the total value in the ""Overdue Open Balance Tasks"" column of the summary row","1. Report page loads
+2. Per-biller values are readable
+3. Summary row is visible
+4. Total equals the sum of all per-biller ""Overdue Open Balance Tasks"" values (6)"
+12,AC6,Happy Path,High,"Summary/total row correctly sums the Overdue Overpayment Tasks column independently of the other column","Report contains multiple billers with known Overdue Overpayment Tasks counts","Biller rows summing to a known total, e.g. 3 + 1 + 0 = 4","1. Navigate to the Biller Activity Report page
+2. Read the ""Overdue Overpayment Tasks"" value for each biller row
+3. Verify the summary/total row is visible
+4. Read the total value in the ""Overdue Overpayment Tasks"" column of the summary row","1. Report page loads
+2. Per-biller values are readable
+3. Summary row is visible
+4. Total equals the sum of all per-biller ""Overdue Overpayment Tasks"" values (4), independent of the Open Balance total"
+13,AC7,Happy Path,High,"Exported report file includes both new columns with accurate data","Report loaded with known values in both new columns","Biller X = 3 overdue overpayment, Biller Y = 5 overdue open balance","1. Navigate to the Biller Activity Report page
+2. Verify the Export button is visible
+3. Click the Export button
+4. Open the exported file
+5. Verify the ""Overdue Open Balance Tasks"" and ""Overdue Overpayment Tasks"" columns are present with correct values","1. Report page loads
+2. Export button visible and enabled
+3. Export downloads/generates a file
+4. File opens successfully
+5. Both columns are present in the file and values match the on-screen values (5 and 3 respectively)"
+14,AC7,Negative,Medium,"Exported report does not contain the removed ""Overdue Tasks"" column","Report loaded and export generated","None","1. Navigate to the Biller Activity Report page
+2. Click the Export button
+3. Open the exported file
+4. Inspect the column headers in the exported file","1. Report page loads
+2. Export completes
+3. File opens successfully
+4. No ""Overdue Tasks"" column header exists in the exported file"
+15,AC8,Edge Case,Medium,"Column order is preserved after export (Overdue Open Balance Tasks before Overdue Overpayment Tasks)","Report loaded and export generated","None","1. Navigate to the Biller Activity Report page
+2. Click the Export button
+3. Open the exported file
+4. Compare the column order of the two new columns in the file","1. Report page loads
+2. Export completes
+3. File opens successfully
+4. ""Overdue Open Balance Tasks"" column appears before ""Overdue Overpayment Tasks"" column in the file"
+16,AC1,RBAC,High,"A read-only/Viewer role can still view the Biller Activity Report without the removed column, but cannot export","User logged in with a Viewer/read-only role","None","1. Log in as a Viewer-role user
+2. Navigate to the Biller Activity Report page
+3. Verify the report grid loads without an ""Overdue Tasks"" column
+4. Verify the Export button state","1. Login succeeds
+2. Report page loads
+3. Grid is visible with no ""Overdue Tasks"" column
+4. Export button is hidden or disabled for the Viewer role"
