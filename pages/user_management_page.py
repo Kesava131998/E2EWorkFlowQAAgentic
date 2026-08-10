@@ -47,6 +47,18 @@ class UserManagementPage(BasePage):
     def toggle_show_primary_only(self):
         self.show_primary_only_toggle.click()
 
+    @allure.step("Focus Show Primary Only toggle via keyboard")
+    def focus_toggle(self):
+        self.show_primary_only_toggle.focus()
+
+    @allure.step("Get Show Primary Only toggle accessible name")
+    def get_toggle_accessible_name(self) -> str:
+        return self.show_primary_only_toggle.get_attribute("aria-label")
+
+    @allure.step("Press {key} on the focused toggle")
+    def press_toggle_key(self, key: str):
+        self.page.keyboard.press(key)
+
     @allure.step("Get role grid row count")
     def get_role_grid_row_count(self) -> int:
         return self.role_grid_rows.count()

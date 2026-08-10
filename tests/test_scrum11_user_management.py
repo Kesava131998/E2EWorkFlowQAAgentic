@@ -1,10 +1,6 @@
 import allure
+import pytest
 from pages.user_management_page import UserManagementPage
-from config.settings import settings
-
-# TODO: replace with real test data/accounts once confirmed for this environment
-VIEWER_ROLE_USERNAME = "TODO-viewer-role-user"
-VIEWER_ROLE_PASSWORD = "TODO-viewer-role-password"
 
 
 @allure.epic("SCRUM-11: Add Show Primary Only Toggle to Facility & Role View")
@@ -305,15 +301,15 @@ def test_pos_toggle_keyboard_operable_with_accessible_name(page):
         user_mgmt_page.click_facility_role_tab()
 
     with allure.step("Step 3: Focus the toggle via keyboard"):
-        user_mgmt_page.show_primary_only_toggle.focus()
+        user_mgmt_page.focus_toggle()
 
     with allure.step("Step 4: Verify the toggle has an accessible name"):
-        accessible_name = user_mgmt_page.show_primary_only_toggle.get_attribute("aria-label")
+        accessible_name = user_mgmt_page.get_toggle_accessible_name()
         assert accessible_name, "Show Primary Only toggle has no accessible name"
 
     with allure.step("Step 5: Press Space to toggle it and verify the state changes"):
         initial_state = user_mgmt_page.get_show_primary_only_toggle_state()
-        user_mgmt_page.page.keyboard.press("Space")
+        user_mgmt_page.press_toggle_key("Space")
         assert user_mgmt_page.get_show_primary_only_toggle_state() != initial_state, \
             "Toggle state did not change after keyboard activation"
 
@@ -328,17 +324,19 @@ def test_perm_viewer_cannot_access_facility_role_view(page):
     AC: A "Show Primary Only" toggle appears on the Facility & Role View tab
     RBAC: Viewer-role users should not see the Facility & Role View tab/toggle
     """
+    pytest.skip(
+        "Blocked on missing pages/login_page.py for Azure AD SSO — "
+        "cannot authenticate as a Viewer-role user yet. See SCRUM-11 PR notes."
+    )
+
     user_mgmt_page = UserManagementPage(page)
 
-    # TODO: Implement Viewer-role login once LoginPage/SSO automation is available.
-    # Blocked on missing pages/login_page.py for Azure AD SSO — see SCRUM-11 PR notes.
-
     with allure.step("Step 1: Log in as a Viewer-role user"):
-        pass  # TODO: Implement
+        pass  # TODO: Implement once LoginPage/SSO automation is available
 
     with allure.step("Step 2: Attempt to navigate to User Management page"):
         user_mgmt_page.navigate_to_user_management()
 
     with allure.step("Step 3: Verify Facility & Role tab/toggle is not accessible"):
-        # TODO: Assert access-denied state or absence of Facility & Role tab
-        pass
+        assert not user_mgmt_page.is_show_primary_only_toggle_visible(), \
+            "Viewer-role user should not see the Facility & Role toggle"
