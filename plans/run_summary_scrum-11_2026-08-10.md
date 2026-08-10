@@ -21,7 +21,7 @@ Jira    : https://vwiki281-1785763863770.atlassian.net/browse/SCRUM-11
 | Postman Export | ⏭️ | Declined at api-test-scope checkpoint (UI tests only) |
 | Commit + Push | ✅ | 6911e1c |
 | PR Raised | ✅ | PR #12 (draft, tests not executed) |
-| PR Review | Pending | Stage 9 — spawned after PR raised |
+| PR Review | ✅ | REQUEST_CHANGES (posted as COMMENT — GitHub blocks self-review); 2 must-fix findings applied and pushed (cddbe52) |
 
 ## Coverage Delta
 Before: 15 tests | After: 27 tests | Added: +12
