@@ -2,7 +2,7 @@
 Date    : 2026-08-10
 Repo    : manohar10173/Revflow-e2e-workflow
 Branch  : scrum-11-add-show-primary-only-toggle-v2
-PR      : TBD
+PR      : https://github.com/manohar10173/Revflow-e2e-workflow/pull/12 (draft)
 Jira    : https://vwiki281-1785763863770.atlassian.net/browse/SCRUM-11
 
 ## Stage Results
@@ -19,8 +19,8 @@ Jira    : https://vwiki281-1785763863770.atlassian.net/browse/SCRUM-11
 | Test Run | ⏭️ | Skipped at user's request (test-execution-scope checkpoint) |
 | QA TC Execution → Done | ⏭️ | Not transitioned — execution was skipped, not performed |
 | Postman Export | ⏭️ | Declined at api-test-scope checkpoint (UI tests only) |
-| Commit + Push | ✅ | See PR link above |
-| PR Raised | ✅ | Draft (tests not executed) |
+| Commit + Push | ✅ | 6911e1c |
+| PR Raised | ✅ | PR #12 (draft, tests not executed) |
 | PR Review | Pending | Stage 9 — spawned after PR raised |
 
 ## Coverage Delta
