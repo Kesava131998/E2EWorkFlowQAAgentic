@@ -71,6 +71,20 @@ $serverJob = Start-Job -ScriptBlock {
 Write-Host "  Server Job ID: $($serverJob.Id)"
 Start-Sleep -Seconds 1
 
+# --- Open the browser automatically once Vite is reachable (non-blocking)
+$openJob = Start-Job -ScriptBlock {
+    $url = "http://localhost:5173"
+    for ($i = 0; $i -lt 30; $i++) {
+        try {
+            Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 1 | Out-Null
+            Start-Process $url
+            return
+        } catch {
+            Start-Sleep -Milliseconds 500
+        }
+    }
+}
+
 # --- Start Vite in foreground (Ctrl-C stops it)
 Set-Location $CLIENT_DIR
 try {
@@ -80,5 +94,7 @@ try {
     Write-Host "${YELLOW}Shutting down API server...${NC}"
     Stop-Job  -Job $serverJob -ErrorAction SilentlyContinue
     Remove-Job -Job $serverJob -ErrorAction SilentlyContinue
+    Stop-Job  -Job $openJob -ErrorAction SilentlyContinue
+    Remove-Job -Job $openJob -ErrorAction SilentlyContinue
     Write-Host "${GREEN}Done.${NC}"
 }

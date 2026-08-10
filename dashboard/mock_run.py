@@ -18,6 +18,7 @@ import sys
 import time
 import urllib.request
 import urllib.error
+import webbrowser
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -25,6 +26,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 API = "http://localhost:8765"
+DASHBOARD_URL = "http://localhost:5173"
 
 # Real KAN-2 data
 TICKET = "KAN-2"
@@ -497,7 +499,8 @@ class Runner:
             sys.exit(1)
 
         print("  ✓ Dashboard server connected")
-        print("  ✓ Opening http://localhost:5173")
+        print(f"  ✓ Opening {DASHBOARD_URL}")
+        webbrowser.open(DASHBOARD_URL)
         print()
         if self.no_hitl:
             print("  ℹ  --no-hitl: HITL checkpoints will auto-approve")
