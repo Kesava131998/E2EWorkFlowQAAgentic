@@ -1,0 +1,138 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+1,AC1,Happy Path,High,Toggle present and defaults to Off,"User logged in as Admin; navigated to the Aging page",N/A,"1. Navigate to the Aging page.
+2. Verify the ""Show all comments in tooltip"" toggle control is visible on the Aging page.
+3. Verify the toggle's current state.","1. Aging page loads successfully.
+2. Toggle control ""Show all comments in tooltip"" is visible on the page.
+3. Toggle state is Off (unchecked) by default."
+2,AC2,Happy Path,High,Setting persists within session and is saved as part of saved views,"User logged in as Admin; on Aging page; toggle currently Off","Saved view name ""Test View AC2""","1. Verify the ""Show all comments in tooltip"" toggle is visible.
+2. Click the toggle to turn it On.
+3. Verify toggle state is On.
+4. Navigate away to another page and back to the Aging page within the same session.
+5. Verify toggle state after navigating back.
+6. Save the current view as ""Test View AC2"".
+7. Reload the saved view ""Test View AC2"".
+8. Verify toggle state in the reloaded saved view.","1. Toggle is visible.
+2. Toggle switches to On state.
+3. Toggle displays On.
+4. Navigation completes within the same session.
+5. Toggle still shows On (state persisted within session).
+6. View ""Test View AC2"" saves successfully with confirmation.
+7. Saved view loads without error.
+8. Toggle state is On, matching the saved view configuration."
+3,AC3,Happy Path,High,Follow Up Date is displayed on the Aging tooltip,"User logged in as Admin; a balance cell has a Follow Up Date set","Balance cell with Follow Up Date = 2026-08-20","1. Locate a balance cell that has an associated Follow Up Date.
+2. Open the Aging tooltip for that balance cell.
+3. Verify the tooltip is visible.
+4. Verify the Follow Up Date field is displayed within the tooltip.
+5. Verify the displayed date matches the expected Follow Up Date (2026-08-20).","1. Balance cell is located.
+2. Tooltip opens.
+3. Tooltip is visible on screen.
+4. Follow Up Date label/value is present in the tooltip.
+5. Displayed date equals 2026-08-20."
+4,AC3,Edge Case,Medium,Follow Up Date absent renders without error,"Balance cell without a Follow Up Date set","Balance cell with Follow Up Date = null","1. Locate a balance cell without a Follow Up Date.
+2. Open the Aging tooltip for that cell.
+3. Verify the Follow Up Date field/row rendering.","1. Balance cell located.
+2. Tooltip opens.
+3. Follow Up Date field shows an empty/placeholder value (e.g. ""—"") without error; tooltip renders normally."
+5,AC4,Happy Path,High,Off shows only most recent comment (no change from current behavior),"Toggle is Off; balance cell has multiple user-authored comments","Balance cell with 3 user comments, most recent = ""Called payer, awaiting callback""","1. Verify toggle ""Show all comments in tooltip"" is Off.
+2. Open the Aging tooltip for a balance cell with multiple comments.
+3. Verify the Comments section is visible.
+4. Verify the number of comments displayed in the Comments section.
+5. Verify the displayed comment text matches the most recent comment.","1. Toggle confirmed Off.
+2. Tooltip opens.
+3. Comments section visible.
+4. Exactly 1 comment is displayed.
+5. Displayed comment text is ""Called payer, awaiting callback""."
+6,AC5,Happy Path,High,On shows all user-authored comments oldest-to-newest,"Toggle is On; balance cell has 3 user-authored comments made on different dates","Comments C1 (oldest), C2, C3 (newest)","1. Turn the ""Show all comments in tooltip"" toggle On.
+2. Open the Aging tooltip for the balance cell with comments C1, C2, C3.
+3. Verify the Comments section is visible.
+4. Verify the count of comments displayed.
+5. Verify the order of comments from top to bottom.","1. Toggle is On.
+2. Tooltip opens.
+3. Comments section visible.
+4. 3 comments are displayed.
+5. Comments appear in order C1, C2, C3 (oldest to newest)."
+7,AC6,Negative,High,System-generated comments never appear regardless of setting,"Toggle On; balance cell has 2 user comments and 1 system-generated comment","System comment text = ""Balance auto-adjusted by system""","1. Verify toggle is On.
+2. Open the Aging tooltip for the balance cell containing the system-generated comment.
+3. Verify the Comments section content.
+4. Search the rendered comments for the system-generated comment text.
+5. Set toggle Off and re-open the tooltip.
+6. Search the rendered comments again for the system-generated comment text.","1. Toggle confirmed On.
+2. Tooltip opens.
+3. Only user-authored comments are rendered.
+4. System-generated comment text is not found in the Comments section.
+5. Tooltip re-opens with toggle Off.
+6. System-generated comment text is still not found."
+8,AC7,Happy Path,Medium,Comments section auto-scrolls to most recent comment on open,"Toggle On; balance cell has 10+ user comments (enough to overflow visible area)","10 comments, newest = ""Final follow-up sent""","1. Verify toggle is On.
+2. Open the Aging tooltip for the balance cell with 10+ comments.
+3. Verify the Comments section scroll position immediately after opening.
+4. Verify which comment is in view.","1. Toggle On.
+2. Tooltip opens.
+3. Comments section is scrolled to the bottom (most recent).
+4. The comment ""Final follow-up sent"" is visible in the viewport without manual scrolling."
+9,AC8,Happy Path,Medium,Each comment displays author, date/time, and comment text,"Toggle On; balance cell has at least 1 user comment","Comment by ""Jane Doe"" on 2026-08-10 10:00 AM, text ""Payer confirmed payment plan""","1. Open the Aging tooltip for the balance cell with the known comment.
+2. Verify the Comments section is visible.
+3. Verify the comment's author field.
+4. Verify the comment's date/time field.
+5. Verify the comment's text field.","1. Tooltip opens.
+2. Comments section visible.
+3. Author ""Jane Doe"" is displayed.
+4. Date/time ""2026-08-10 10:00 AM"" is displayed.
+5. Comment text ""Payer confirmed payment plan"" is displayed."
+10,AC9,Edge Case,Medium,Comments section scrolls independently when comments overflow,"Toggle On; balance cell has enough comments to overflow the Comments section height","15 comments","1. Open the Aging tooltip for the balance cell with 15 comments.
+2. Verify the Comments section shows a scrollbar/is scrollable.
+3. Scroll within the Comments section.
+4. Verify the rest of the tooltip (header, Follow Up Date, See Task button) remains fixed in place.","1. Tooltip opens.
+2. Comments section is independently scrollable.
+3. Scrolling moves only the comments list.
+4. Other tooltip elements do not move/scroll."
+11,AC10,Edge Case,Medium,Tooltip respects max height,"Toggle On; balance cell with a large number of comments","30 comments","1. Open the Aging tooltip for the balance cell with 30 comments.
+2. Measure/inspect the tooltip's rendered height.
+3. Compare against the documented/expected max height value.","1. Tooltip opens.
+2. Tooltip height is captured.
+3. Tooltip height does not exceed the defined max height, regardless of comment count."
+12,AC11,Happy Path,Medium,Tooltip opens to the right or left of the balance cell to stay on-screen,"Toggle On; two balance cells — one near the right edge, one near the left edge of the viewport","Balance cell A (near right edge), Balance cell B (near left edge)","1. Open the Aging tooltip for balance cell A (near right edge of screen).
+2. Verify the tooltip's horizontal position relative to the cell.
+3. Close the tooltip.
+4. Open the Aging tooltip for balance cell B (near left edge of screen).
+5. Verify the tooltip's horizontal position relative to the cell.","1. Tooltip opens for cell A.
+2. Tooltip renders to the left of cell A (flips to avoid viewport overflow).
+3. Tooltip closes.
+4. Tooltip opens for cell B.
+5. Tooltip renders to the right of cell B."
+13,AC12,Happy Path,High,See Task button opens the associated task,"Toggle On or Off; balance cell tooltip open; associated task exists","Task ID linked to the balance cell","1. Open the Aging tooltip for a balance cell with an associated task.
+2. Verify the ""See Task"" button is visible within the tooltip.
+3. Click the ""See Task"" button.
+4. Verify the resulting navigation/view.","1. Tooltip opens.
+2. ""See Task"" button is visible.
+3. Button is clicked.
+4. The associated task view/detail opens as expected."
+14,AC12,Negative,Medium,See Task button absent/disabled when no linked task,"Balance cell tooltip open; no associated task exists","Balance cell with no linked task","1. Open the Aging tooltip for a balance cell with no associated task.
+2. Verify the ""See Task"" button visibility/enabled state.","1. Tooltip opens.
+2. ""See Task"" button is hidden or disabled, since no task exists to navigate to."
+15,AC13,Edge Case,High,Comments section hidden when no user-authored comments regardless of setting,"Balance cell has zero user-authored comments (may have system-generated comments only)","Balance cell with only system comment ""Balance auto-adjusted by system""","1. Set toggle to Off; open the Aging tooltip for the balance cell with no user comments.
+2. Verify whether the Comments section is rendered.
+3. Set toggle to On; re-open the tooltip for the same balance cell.
+4. Verify whether the Comments section is rendered.","1. Tooltip opens with toggle Off.
+2. Comments section is not visible/hidden.
+3. Tooltip re-opens with toggle On.
+4. Comments section remains hidden."
+16,AC14,Happy Path,High,All Aging tooltip ACs apply within Case View,"User logged in as Admin; navigated to a Case's Case View; Aging section visible with a balance cell having multiple comments","Same comment set as AC5 (C1, C2, C3), within Case View context","1. Navigate to a case's Case View.
+2. Locate the Aging section within Case View.
+3. Verify the ""Show all comments in tooltip"" toggle is present within Case View's Aging section.
+4. Turn the toggle On.
+5. Open the Aging tooltip for a balance cell within Case View.
+6. Verify all user-authored comments display oldest-to-newest, consistent with AC5 behavior.","1. Case View loads.
+2. Aging section is located.
+3. Toggle is present.
+4. Toggle switches On.
+5. Tooltip opens.
+6. Comments display oldest-to-newest, matching main Aging page behavior."
+17,AC1/AC2,RBAC/Permission,Medium,Viewer (read-only) role cannot modify the toggle or save view changes,"User logged in as a Viewer (read-only) role; on Aging page",N/A,"1. Log in as a user with Viewer (read-only) role.
+2. Navigate to the Aging page.
+3. Verify the ""Show all comments in tooltip"" toggle visibility/enabled state.
+4. Attempt to click the toggle.
+5. Attempt to save the current view.","1. Login succeeds as Viewer.
+2. Aging page loads.
+3. Toggle is visible but disabled for Viewer role (read-only access).
+4. Toggle click has no effect (state unchanged).
+5. Save View action is unavailable/disabled for Viewer role."
