@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 const SERVER_URL = 'http://localhost:8765'
 
 const ARTIFACT_META = {
-  csv:       { icon: '📋', color: 'text-cyan-400',   border: 'border-cyan-700/60',   bg: 'bg-cyan-900/20'   },
-  python:    { icon: '🐍', color: 'text-green-400',  border: 'border-green-700/60',  bg: 'bg-green-900/20'  },
-  markdown:  { icon: '📄', color: 'text-purple-400', border: 'border-purple-700/60', bg: 'bg-purple-900/20' },
-  json:      { icon: '{}', color: 'text-amber-400',  border: 'border-amber-700/60',  bg: 'bg-amber-900/20'  },
-  report:    { icon: '📊', color: 'text-rose-400',   border: 'border-rose-700/60',   bg: 'bg-rose-900/20'   },
-  testcases: { icon: '🃏', color: 'text-cyan-400',   border: 'border-cyan-700/60',   bg: 'bg-cyan-900/20'   },
-  default:   { icon: '📁', color: 'text-gray-400',   border: 'border-gray-700',      bg: 'bg-gray-900/20'   },
+  csv: { icon: '📋', color: 'text-cyan-400', border: 'border-cyan-700/60', bg: 'bg-cyan-900/20' },
+  python: { icon: '🐍', color: 'text-green-400', border: 'border-green-700/60', bg: 'bg-green-900/20' },
+  markdown: { icon: '📄', color: 'text-purple-400', border: 'border-purple-700/60', bg: 'bg-purple-900/20' },
+  json: { icon: '{}', color: 'text-amber-400', border: 'border-amber-700/60', bg: 'bg-amber-900/20' },
+  report: { icon: '📊', color: 'text-rose-400', border: 'border-rose-700/60', bg: 'bg-rose-900/20' },
+  testcases: { icon: '🃏', color: 'text-cyan-400', border: 'border-cyan-700/60', bg: 'bg-cyan-900/20' },
+  default: { icon: '📁', color: 'text-gray-400', border: 'border-gray-700', bg: 'bg-gray-900/20' },
 }
 
 function openArtifact(artifact, onOpenArtifact) {
@@ -22,25 +22,25 @@ function openArtifact(artifact, onOpenArtifact) {
 }
 
 const VARIANT_STYLES = {
-  success:  'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500 shadow-[0_0_12px_#10b98144]',
-  danger:   'bg-red-900/60 hover:bg-red-800 text-red-200 border border-red-700',
-  warning:  'bg-amber-900/60 hover:bg-amber-800 text-amber-200 border border-amber-700',
+  success: 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500 shadow-[0_0_12px_#10b98144]',
+  danger: 'bg-red-900/60 hover:bg-red-800 text-red-200 border border-red-700',
+  warning: 'bg-amber-900/60 hover:bg-amber-800 text-amber-200 border border-amber-700',
   feedback: 'bg-blue-900/50 hover:bg-blue-800/60 text-blue-200 border border-blue-700',
-  default:  'bg-gray-700/60 hover:bg-gray-600 text-white border border-gray-600',
+  default: 'bg-gray-700/60 hover:bg-gray-600 text-white border border-gray-600',
 }
 
 // Options with these variants expand a textarea instead of responding immediately
 const FEEDBACK_VARIANTS = new Set(['feedback', 'warning'])
 
 export function HitlGate({ checkpoint, onRespond, onOpenArtifact }) {
-  const [feedbackOpt, setFeedbackOpt]   = useState(null)
+  const [feedbackOpt, setFeedbackOpt] = useState(null)
   const [feedbackText, setFeedbackText] = useState('')
 
   if (!checkpoint) return null
 
   const options = checkpoint.options || [
     { id: 'approve', label: 'Approve & Continue', variant: 'success' },
-    { id: 'reject',  label: 'Request Changes',    variant: 'feedback' },
+    { id: 'reject', label: 'Request Changes', variant: 'feedback' },
   ]
 
   const contextEntries = Object.entries(checkpoint.data || {}).filter(
@@ -111,13 +111,40 @@ export function HitlGate({ checkpoint, onRespond, onOpenArtifact }) {
             {contextEntries.length > 0 && (
               <div className="mb-5 bg-gray-800/60 rounded-lg p-3 border border-gray-700">
                 <div className="text-[10px] text-gray-500 font-mono uppercase tracking-wider mb-2">Context</div>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {contextEntries.map(([key, value]) => (
-                    <div key={key} className="flex gap-3 text-xs font-mono">
-                      <span className="text-gray-500 min-w-[110px] shrink-0">{key}</span>
-                      <span className="text-gray-300 break-all">{JSON.stringify(value)}</span>
-                    </div>
-                  ))}
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {contextEntries.map(([key, value]) => {
+                    // Render arrays (e.g. ui_functions, api_functions, sample_tests) as a table
+                    if (Array.isArray(value)) {
+                      if (value.length === 0) return null
+                      return (
+                        <div key={key}>
+                          <div className="text-gray-500 text-xs font-mono mb-1">{key} ({value.length})</div>
+                          <table className="w-full text-xs font-mono border border-gray-700 rounded overflow-hidden">
+                            <tbody>
+                              {value.map((item, i) => (
+                                <tr key={i} className={i % 2 === 0 ? 'bg-gray-900/40' : 'bg-gray-800/40'}>
+                                  <td className="px-2 py-1 text-gray-600 w-8 text-right">{i + 1}</td>
+                                  <td className="px-2 py-1 text-gray-300 break-all">
+                                    {typeof item === 'object' ? JSON.stringify(item) : String(item)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )
+                    }
+
+                    // Scalars (strings, numbers, booleans) stay as a simple key/value row
+                    return (
+                      <div key={key} className="flex gap-3 text-xs font-mono">
+                        <span className="text-gray-500 min-w-[110px] shrink-0">{key}</span>
+                        <span className="text-gray-300 break-all">
+                          {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
