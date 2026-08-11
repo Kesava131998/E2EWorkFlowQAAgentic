@@ -1,0 +1,146 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+1,AC1,Happy Path,High,Filter option lists refresh when global facility filter changes,"User logged in as Admin; navigated to /tasks; Task List grid visible; global facility filter currently set to Facility A only","Global facility filter values: Facility A, Facility B","1. Verify the global facility filter control is visible and enabled.
+2. Click the global facility filter dropdown.
+3. Verify the dropdown list is displayed.
+4. Select ""Facility B"" in addition to ""Facility A"".
+5. Click Apply/confirm on the global facility filter.
+6. Verify the Resident filter dropdown is visible.
+7. Click the Resident filter dropdown.
+8. Verify the Resident filter option list.","1. Global facility filter control is visible and enabled.
+2. Dropdown opens.
+3. Dropdown list with facility options is displayed.
+4. ""Facility B"" is now selected alongside ""Facility A"".
+5. Global facility filter is applied; Task List begins reloading.
+6. Resident filter dropdown is visible.
+7. Resident filter dropdown opens.
+8. Resident filter option list now includes residents belonging to both Facility A and Facility B."
+2,AC1,Happy Path,High,Payer and Assigned To filters refresh alongside Resident/Facility filters,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A","Global facility filter values: Facility A, Facility B","1. Verify the Payer filter dropdown is visible.
+2. Note current Payer filter option list.
+3. Verify the Assigned To filter dropdown is visible.
+4. Note current Assigned To filter option list.
+5. Open the global facility filter and add ""Facility B"".
+6. Apply the global facility filter.
+7. Re-open the Payer filter dropdown.
+8. Re-open the Assigned To filter dropdown.","1. Payer filter dropdown is visible.
+2. Initial Payer options limited to Facility A payers noted.
+3. Assigned To filter dropdown is visible.
+4. Initial Assigned To options limited to Facility A staff noted.
+5. ""Facility B"" is selected in the global facility filter.
+6. Global facility filter applied.
+7. Payer filter dropdown now lists payers from Facility A and Facility B.
+8. Assigned To filter dropdown now lists staff from Facility A and Facility B."
+3,AC2,Happy Path,High,Selected Resident filter value is preserved when it still matches a remaining global facility,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A + Facility B; Resident filter has ""Resident X"" selected, where Resident X belongs to Facility A","Resident X (Facility A)","1. Verify Resident filter shows ""Resident X"" as selected.
+2. Open the global facility filter dropdown.
+3. Deselect ""Facility B"", leaving only ""Facility A"" selected.
+4. Apply the global facility filter.
+5. Verify the Resident filter selection after the Task List reloads.","1. ""Resident X"" is shown as selected in the Resident filter.
+2. Global facility filter dropdown opens.
+3. Only ""Facility A"" remains selected.
+4. Global facility filter is applied; Task List reloads.
+5. ""Resident X"" remains selected in the Resident filter because Resident X still belongs to Facility A."
+4,AC3,Happy Path,High,Selected Resident filter value is removed when it no longer matches any remaining global facility,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A + Facility B; Resident filter has ""Resident Y"" selected, where Resident Y belongs only to Facility B","Resident Y (Facility B only)","1. Verify Resident filter shows ""Resident Y"" as selected.
+2. Open the global facility filter dropdown.
+3. Deselect ""Facility B"", leaving only ""Facility A"" selected.
+4. Apply the global facility filter.
+5. Verify the Resident filter selection after the Task List reloads.","1. ""Resident Y"" is shown as selected in the Resident filter.
+2. Global facility filter dropdown opens.
+3. Only ""Facility A"" remains selected.
+4. Global facility filter is applied; Task List reloads.
+5. ""Resident Y"" is no longer selected in the Resident filter because it does not belong to Facility A."
+5,AC4,Happy Path,High,Adding a facility to the global filter does not clear existing valid Task List filter selections,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A; Resident filter has ""Resident X"" (Facility A) selected; Payer filter has ""Payer P"" (Facility A) selected","Facility B (to add)","1. Verify Resident filter shows ""Resident X"" selected and Payer filter shows ""Payer P"" selected.
+2. Open the global facility filter dropdown.
+3. Select ""Facility B"" in addition to ""Facility A"".
+4. Apply the global facility filter.
+5. Verify the Resident and Payer filter selections after reload.","1. ""Resident X"" and ""Payer P"" are shown as selected.
+2. Global facility filter dropdown opens.
+3. ""Facility B"" is now selected alongside ""Facility A"".
+4. Global facility filter applied; Task List reloads.
+5. ""Resident X"" and ""Payer P"" remain selected — no valid selection was cleared by the addition."
+6,AC5,Happy Path,High,"Removing a facility only removes Task List selections no longer valid, keeping the rest","User logged in as Admin; navigated to /tasks; global facility filter set to Facility A + Facility B; Assigned To filter has ""Staff M"" (Facility A) and ""Staff N"" (Facility B) both selected","Staff M (Facility A), Staff N (Facility B)","1. Verify Assigned To filter shows both ""Staff M"" and ""Staff N"" selected.
+2. Open the global facility filter dropdown.
+3. Deselect ""Facility B"", leaving only ""Facility A"".
+4. Apply the global facility filter.
+5. Verify the Assigned To filter selection after reload.","1. Both ""Staff M"" and ""Staff N"" are shown as selected.
+2. Global facility filter dropdown opens.
+3. Only ""Facility A"" remains selected.
+4. Global facility filter applied; Task List reloads.
+5. ""Staff M"" remains selected; ""Staff N"" is removed because it no longer matches any selected global facility."
+7,AC6,Happy Path,High,Task List reloads and reflects preserved valid filters after global facility filter change,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A + Facility B; Resident filter has ""Resident X"" (Facility A) selected; Task List grid showing rows for Resident X","Resident X (Facility A)","1. Verify Task List grid rows for ""Resident X"" are visible.
+2. Open the global facility filter dropdown.
+3. Deselect ""Facility B"".
+4. Apply the global facility filter.
+5. Verify the Task List grid triggers a reload (loading indicator).
+6. Verify the Task List grid content after reload completes.","1. Task List grid shows rows for ""Resident X"".
+2. Global facility filter dropdown opens.
+3. Only ""Facility A"" remains selected.
+4. Global facility filter applied.
+5. Task List grid shows a loading indicator, confirming a reload was triggered.
+6. Task List grid reloads and still shows rows for ""Resident X"", consistent with the preserved Resident filter selection."
+8,AC7,Happy Path,High,Filter is fully cleared when every selected value is invalidated,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A + Facility B; Resident filter has only ""Resident Y"" (Facility B only) selected","Resident Y (Facility B only)","1. Verify Resident filter shows only ""Resident Y"" selected.
+2. Open the global facility filter dropdown.
+3. Deselect ""Facility B"", leaving only ""Facility A"".
+4. Apply the global facility filter.
+5. Verify the Resident filter state after reload.","1. Resident filter shows only ""Resident Y"" selected.
+2. Global facility filter dropdown opens.
+3. Only ""Facility A"" remains selected.
+4. Global facility filter applied; Task List reloads.
+5. Resident filter is fully cleared (shows placeholder/empty state) because its only selected value was invalidated."
+9,"AC3, AC7",Negative,Medium,"All filters (Resident, Facility, Payer, Assigned To) are cleared simultaneously when global facility filter is changed to a completely disjoint facility set","User logged in as Admin; navigated to /tasks; global facility filter set to Facility A; Resident, Facility, Payer, and Assigned To filters all have values selected that belong exclusively to Facility A","Facility C (disjoint from Facility A)","1. Verify Resident, Facility, Payer, and Assigned To filters each show a selected value.
+2. Open the global facility filter dropdown.
+3. Deselect ""Facility A"" and select ""Facility C"" instead.
+4. Apply the global facility filter.
+5. Verify each of the four filters after reload.","1. Each of the four filters shows a selected value tied to Facility A.
+2. Global facility filter dropdown opens.
+3. Only ""Facility C"" is selected.
+4. Global facility filter applied; Task List reloads.
+5. All four filters (Resident, Facility, Payer, Assigned To) are cleared because none of their prior selections match Facility C."
+10,AC2,Edge Case,Medium,Selection is preserved when a value matches multiple remaining global facilities,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A + Facility B + Facility C; Payer filter has ""Payer Q"" selected, where Payer Q is associated with both Facility A and Facility B","Payer Q (Facility A + Facility B)","1. Verify Payer filter shows ""Payer Q"" selected.
+2. Open the global facility filter dropdown.
+3. Deselect ""Facility C"" only, leaving Facility A and Facility B selected.
+4. Apply the global facility filter.
+5. Verify the Payer filter selection after reload.","1. ""Payer Q"" is shown as selected.
+2. Global facility filter dropdown opens.
+3. Facility A and Facility B remain selected; Facility C is deselected.
+4. Global facility filter applied; Task List reloads.
+5. ""Payer Q"" remains selected since it still matches at least one selected global facility (Facility A or Facility B)."
+11,AC5,Edge Case,Medium,Removing all facilities from the global filter clears all Task List filter selections,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A; Resident and Payer filters have values selected","Resident X (Facility A), Payer P (Facility A)","1. Verify Resident and Payer filters show selected values.
+2. Open the global facility filter dropdown.
+3. Deselect ""Facility A"", leaving zero facilities selected.
+4. Apply the global facility filter (or verify system-enforced minimum-selection behavior).
+5. Verify the Resident and Payer filter state after reload.","1. Resident and Payer filters show their selected values.
+2. Global facility filter dropdown opens.
+3. No facility remains selected, or the UI blocks zero-selection per its own validation rules.
+4. If zero-selection is permitted, the global facility filter is applied and Task List reloads; if blocked, an inline validation message is shown and the previous selection is retained.
+5. If applied with zero facilities, Resident and Payer filters are cleared since no facility can validate them; if blocked, Resident and Payer filters remain unchanged."
+12,"AC1, AC6",Edge Case,Medium,Global facility filter change while Task List has an active row-level filter/search does not error,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A; a free-text search/filter is active on the Task List grid","Search text: ""INV-1001""","1. Verify the Task List grid is filtered by the active search text.
+2. Open the global facility filter dropdown.
+3. Select ""Facility B"" in addition to ""Facility A"".
+4. Apply the global facility filter.
+5. Verify the Task List grid state after reload.","1. Task List grid shows only rows matching ""INV-1001"".
+2. Global facility filter dropdown opens.
+3. ""Facility B"" is selected alongside ""Facility A"".
+4. Global facility filter applied without error.
+5. Task List grid reloads, re-applies the active search text against the new facility scope, and shows no unhandled error state."
+13,AC1,Negative,Medium,"Filter dropdowns show an empty/appropriate state while refresh is in progress, without stale data","User logged in as Admin; navigated to /tasks; global facility filter set to Facility A; Resident filter dropdown open before the change","Facility B (to add)","1. Open the Resident filter dropdown and verify current options are shown.
+2. Without closing the Resident dropdown, change the global facility filter to add ""Facility B"".
+3. Apply the global facility filter.
+4. Re-open the Resident filter dropdown once reload completes.","1. Resident filter dropdown shows Facility A-only options.
+2. Global facility filter selection updates to include Facility B.
+3. Global facility filter applied; Task List triggers reload.
+4. Resident filter dropdown, once re-opened, shows the refreshed option list (Facility A + Facility B) with no stale or duplicate entries."
+14,AC6,Negative,Medium,Task List reload after global facility filter change surfaces a clear error state if the backend call fails,"User logged in as Admin; navigated to /tasks; global facility filter set to Facility A; backend endpoint for Task List reload is simulated to return an error","Facility B (to add); simulated 500 response on reload endpoint","1. Open the global facility filter dropdown.
+2. Select ""Facility B"" in addition to ""Facility A"".
+3. Apply the global facility filter.
+4. Verify the Task List grid state when the reload request fails.","1. Global facility filter dropdown opens.
+2. ""Facility B"" is selected alongside ""Facility A"".
+3. Global facility filter applied; reload request is triggered.
+4. Task List grid shows a visible error/retry state instead of a blank or stale grid, and filter selections are not silently discarded."
+15,"AC2, AC4",RBAC/Permission,High,"A user restricted to a subset of facilities via role only sees filter options for facilities they are permitted to access, and valid selections persist across a permitted global facility filter change","User logged in as a facility-restricted role (e.g. ""Facility Coordinator"") scoped to Facility A only; navigated to /tasks; Resident filter has ""Resident X"" (Facility A) selected","Facility-restricted user; Facility A only","1. Verify the global facility filter only lists Facility A as an available option.
+2. Verify the Resident filter shows ""Resident X"" selected.
+3. Attempt to access the global facility filter to add a facility outside the user's permitted scope (e.g. via direct UI interaction).
+4. Verify no unauthorized facility appears as selectable.
+5. Re-apply the global facility filter with Facility A still selected.","1. Global facility filter lists only Facility A.
+2. ""Resident X"" remains shown as selected.
+3. No facility outside the permitted scope is presented as an option to select.
+4. Unauthorized facilities are absent from the dropdown entirely.
+5. Task List reloads with ""Resident X"" still selected, confirming valid selections persist under a restricted-role filter change."
