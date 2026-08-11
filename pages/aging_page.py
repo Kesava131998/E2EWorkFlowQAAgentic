@@ -1,4 +1,4 @@
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page
 import allure
 from pages.base_page import BasePage
 from config.settings import settings
@@ -56,7 +56,7 @@ class AgingPage(BasePage):
     @allure.step("Open Aging tooltip for balance cell at index {index}")
     def open_tooltip_for_cell(self, index: int = 0):
         self.balance_cells.nth(index).click()
-        expect(self.tooltip).to_be_visible(timeout=settings.SHORT_TIMEOUT)
+        self.tooltip.wait_for(state="visible", timeout=settings.SHORT_TIMEOUT)
 
     @allure.step("Close Aging tooltip")
     def close_tooltip(self):

@@ -18,6 +18,8 @@ EXPECTED_FOLLOWUP_DATE = "2026-08-20"
 MOST_RECENT_COMMENT_TEXT = "TODO-most-recent-comment-text"
 SYSTEM_COMMENT_TEXT = "Balance auto-adjusted by system"
 SAVED_VIEW_NAME = "Test View AC2"
+# TODO: replace with the real oldest-to-newest comment texts for BALANCE_CELL_MULTIPLE_COMMENTS
+EXPECTED_COMMENTS_OLDEST_TO_NEWEST = ["TODO-comment-1-oldest", "TODO-comment-2", "TODO-comment-3-newest"]
 
 
 @allure.epic("SCRUM-53: All Task Comments in Aging Balance Tooltip")
@@ -150,7 +152,7 @@ def test_pos_toggle_on_shows_all_comments_oldest_to_newest(page):
     with allure.step("Verify all comments are displayed in oldest-to-newest order"):
         comments = aging_page.get_comment_texts()
         assert len(comments) > 1, "Expected multiple comments when toggle is On"
-        assert comments == sorted(comments, key=lambda c: comments.index(c)), "Comments not in oldest-to-newest order"
+        assert comments == EXPECTED_COMMENTS_OLDEST_TO_NEWEST, "Comments not in oldest-to-newest order"
 
 
 @allure.epic("SCRUM-53: All Task Comments in Aging Balance Tooltip")
