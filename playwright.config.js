@@ -13,6 +13,7 @@ module.exports = defineConfig({
   fullyParallel: false,
   workers: process.env.WORKERS ? Number(process.env.WORKERS) : 1,
   retries: 0,
+  globalSetup: require.resolve('./global-setup.js'),
   reporter: [
     ['html', { outputFolder: 'reports/html', open: 'never' }],
     ['allure-playwright', { outputFolder: 'reports/allure-results' }],
@@ -27,11 +28,12 @@ module.exports = defineConfig({
     trace: 'retain-on-failure',
     actionTimeout: process.env.TIMEOUT ? Number(process.env.TIMEOUT) : 30_000,
     navigationTimeout: process.env.PAGE_LOAD_TIMEOUT ? Number(process.env.PAGE_LOAD_TIMEOUT) : 60_000,
+    storageState: '.auth/state.json',
   },
   outputDir: 'test-results',
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    // { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
 });

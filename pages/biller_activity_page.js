@@ -317,6 +317,70 @@ class BillerActivityPage extends BasePage {
       }
     });
   }
+
+  // ── Overdue tasks column helpers (SCRUM-65) ────────────────────────────
+
+  rowForUser(userName) {
+    return this.gridRows.filter({ hasText: userName });
+  }
+
+  columnCellForUser(userName, column) {
+    return this.rowForUser(userName).locator(`[data-column-definition-name='${column}']`);
+  }
+
+  async isBillerActivityNavVisible(timeout = settings.PAGE_LOAD_TIMEOUT) {
+    return this.billerActivityReportBtn
+      .waitFor({ state: 'visible', timeout })
+      .then(() => true)
+      .catch(() => false);
+  }
+
+  async waitForReportGridVisible(timeout = settings.PAGE_LOAD_TIMEOUT) {
+    await test.step('Verify report grid header row is visible', async () => {
+      await this.uiColumnHeaders.first().waitFor({ state: 'visible', timeout });
+    });
+  }
+
+  async getColumnHeaderNames() {
+    return test.step('Read all grid header column names', async () => {
+      const headers = await this.uiColumnHeaders.allTextContents();
+      return headers.map((header) => header.trim());
+    });
+  }
+
+  async clickRefreshData(timeout = settings.PAGE_LOAD_TIMEOUT) {
+    await test.step('Click Refresh Data button and wait for spinner to hide', async () => {
+      await this.refreshDataButton.click();
+      await this.loadSpinner.waitFor({ state: 'hidden', timeout });
+    });
+  }
+
+  async getColumnValueForUser(userName, column) {
+    return test.step(`Read ${column} value for ${userName}`, async () => {
+      const cell = this.columnCellForUser(userName, column);
+      await cell.waitFor({ state: 'visible', timeout: settings.PAGE_LOAD_TIMEOUT });
+      const text = await cell.innerText();
+      return Number(text.trim());
+    });
+  }
+
+  async getColumnCellColorForUser(userName, column) {
+    return test.step(`Read computed text color of ${column} cell for ${userName}`, async () => {
+      return this.columnCellForUser(userName, column).evaluate((el) => getComputedStyle(el).color);
+    });
+  }
+
+  async clickColumnValueForUser(userName, column) {
+    await test.step(`Click ${column} value link for ${userName}`, async () => {
+      await this.columnCellForUser(userName, column).locator('a').click();
+    });
+  }
+
+  async clickExcelDownload() {
+    await test.step('Click Excel download button', async () => {
+      await this.excelDownloadButton.click();
+    });
+  }
 }
 
 module.exports = { BillerActivityPage };

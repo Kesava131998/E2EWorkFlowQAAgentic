@@ -15,6 +15,7 @@ env/
 node_modules/
 playwright-report/
 test-results/
+.auth/
 reports/allure-results/
 reports/allure-report/
 reports/allure-html/
