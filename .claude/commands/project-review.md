@@ -6,8 +6,8 @@ tags: [review, audit, planning, quality]
 
 # Skill: Project Review
 
-Performs a comprehensive static audit of the entire `playwright_python` codebase.
-Checks coverage gaps, architecture compliance, locator hygiene, fixture design, and
+Performs a comprehensive static audit of the entire `@playwright/test` JavaScript codebase.
+Checks coverage gaps, architecture compliance, locator hygiene, config design, and
 report configuration. Writes findings as a dated markdown report to `plans/`.
 
 > **Rules**: `agents/rules.md` — all sections
@@ -32,40 +32,40 @@ Map out all files in: `pages/`, `tests/`, `utils/`, `config/`, root-level config
 
 Build an inventory:
 ```
-pages/        : base_page.py, login_page.py, diagnostics_page.py, reports_page.py
-tests/        : conftest.py, diagnostics_tests.py, reboot_validation.py, ...
-utils/        : config.py, test_generator.py, pdf_reader.py
-config/       : settings.py
+pages/        : base_page.js, login_page.js, case_detail_page.js, biller_activity_page.js
+tests/        : basic.spec.js, arw2579-payment-schedule.spec.js, ...
+utils/        : test_generator.js (if present)
+config/       : settings.js
 ```
 
 ### Step 2 — Architecture compliance check
 
 **For each file in `pages/`:**
-- [ ] Inherits `BasePage`?
-- [ ] All locators in `__init__`?
-- [ ] All methods have `@allure.step`?
-- [ ] No assertions in page methods?
-- [ ] Imports are clean (only `allure`, `BasePage`, `playwright`)?
+- [ ] Class extends `BasePage`?
+- [ ] All locators assigned in the constructor?
+- [ ] All action methods wrapped in `test.step(...)`?
+- [ ] No assertions (`expect(...)`) inside page methods — only simple actions/getters?
+- [ ] Imports are clean (only `@playwright/test`, `./base_page`, `../config/settings`)?
 
 **For each file in `tests/`:**
-- [ ] Filename starts with `test_`?
-- [ ] Uses `page` fixture from conftest?
-- [ ] All steps in `with allure.step(...)`?
-- [ ] Uses `settings.*_TIMEOUT` not raw ints?
-- [ ] Allure metadata (`@allure.title`, `@allure.description`) present?
-- [ ] Parametrize used wherever there are data variants?
+- [ ] Filename ends with `.spec.js`?
+- [ ] Uses the built-in `page` fixture from `@playwright/test`?
+- [ ] All steps in `await test.step(...)`?
+- [ ] Uses `settings.*_TIMEOUT` not raw integers?
+- [ ] Allure metadata (`epic`/`feature`/`story` from `allure-js-commons`) present?
+- [ ] `test.describe.parametrize`-style data variants use a loop over a data array, not copy-pasted tests?
 
-**For `conftest.py` files:**
-- [ ] Root conftest handles screenshot on failure?
-- [ ] Root conftest handles allure-results cleanup?
-- [ ] `tests/conftest.py` scope is `module` for login session?
+**For `playwright.config.js`:**
+- [ ] Reporters include `allure-playwright` and `html`?
+- [ ] `use.baseURL`/timeouts sourced from env, not hardcoded?
+- [ ] Screenshot/video/trace capture set to failure-only (not `on` for every run, which bloats artifacts)?
 
-**For `config/settings.py`:**
-- [ ] All timeouts are `os.getenv()` with defaults?
+**For `config/settings.js`:**
+- [ ] All timeouts are `process.env.*` with defaults?
 - [ ] No secrets in settings file?
 
-**For `utils/config.py`:**
-- [ ] Uses `load_dotenv()`?
+**For `utils/test_generator.js`:**
+- [ ] Uses `dotenv`/`require('dotenv').config()`?
 - [ ] No hardcoded values?
 
 ### Step 3 — Locator hygiene audit
@@ -73,8 +73,8 @@ config/       : settings.py
 For each page object, check locators for fragility:
 - XPath with `text()` matching → fragile (UI text changes)
 - Deep nested XPath → fragile (DOM restructure)
-- Positional CSS (`nth-child`) → fragile
-- Stable: `id`, `data-*` attributes, ARIA roles
+- Positional CSS (`:nth-child`) → fragile
+- Stable: `id`, `data-*` attributes, `getByRole`/`getByTestId`
 
 Flag each fragile locator with a risk rating: 🔴 High / 🟡 Medium / 🟢 Low
 
@@ -82,32 +82,32 @@ Flag each fragile locator with a risk rating: 🔴 High / 🟡 Medium / 🟢 Low
 
 Map each page object to tests that use it:
 ```
-DiagnosticPage → diagnostics_tests.py, reboot_validation.py ✅
-LoginPage      → tests/conftest.py (fixture), test_2943.py ✅
-ReportsPage    → extension_report_validation.py, ... ✅
-BasePage       → (base class, not tested directly) ℹ️
+CaseDetailPage     → arw2579-payment-schedule.spec.js ✅
+LoginPage          → (no dedicated spec yet) ⚠️
+BillerActivityPage → (no dedicated spec yet) ⚠️
+BasePage           → (base class, not tested directly) ℹ️
 ```
 
 Identify:
 - Page objects with no test coverage
-- Tests that access the app without going through a page object (direct `page.locator()` calls in tests)
+- Tests that access the app without going through a page object (direct `page.locator()` calls in test files)
 
 ### Step 5 — Dead code check
 
 Look for:
-- Locators defined in `__init__` but never used in any method
+- Locators defined in the constructor but never used in any method
 - Methods defined in page objects but never called from any test
-- Imported modules never used
+- Required modules never used
 
 ### Step 6 — Configuration review
 
 - Is `.env` in `.gitignore`?
-- Does `pytest.ini` `testpaths` still match actual test locations?
-- Is Allure version compatible with installed `allure-pytest`?
-- Does `requirements.txt` match what's actually installed in venv?
+- Does `playwright.config.js` `testDir`/`testMatch` still match actual test locations?
+- Is the `allure-playwright` version compatible with `allure-commandline`?
+- Does `package.json` match what's actually installed (`npm ls` clean, no missing peer deps)?
 
 ```bash
-pip list --format=columns | grep -E "playwright|pytest|allure|pandas"
+npm ls @playwright/test allure-playwright allure-commandline dotenv
 ```
 
 ### Step 7 — Summarise findings and write report
@@ -115,9 +115,9 @@ pip list --format=columns | grep -E "playwright|pytest|allure|pandas"
 Write the report to `plans/review-<YYYY-MM-DD>.md`:
 
 ```markdown
-# Project Review — playwright_python
+# Project Review — AI-Test-Workflow (JavaScript/@playwright/test)
 **Date**: <YYYY-MM-DD>
-**Reviewer**: AI Agent (.claude/skills/project-review.md)
+**Reviewer**: AI Agent (.claude/commands/project-review.md)
 
 ---
 
@@ -181,9 +181,9 @@ Write the report to `plans/review-<YYYY-MM-DD>.md`:
 
 | Priority | Action | File | Effort |
 |----------|--------|------|--------|
-| P1 | Fix raw timeouts in reboot_validation.py | tests/ | Low |
-| P2 | Add @allure.step to 3 methods in reports_page.py | pages/ | Low |
-| P3 | Replace fragile XPath in diagnostics_page.py | pages/ | Medium |
+| P1 | Fix raw timeouts in x.spec.js | tests/ | Low |
+| P2 | Add `test.step` wrapping to 3 methods in biller_activity_page.js | pages/ | Low |
+| P3 | Replace fragile XPath in login_page.js | pages/ | Medium |
 ```
 
 ### Step 8 — Tell the user

@@ -1,7 +1,7 @@
 ---
 name: run-tests
-description: Run the Playwright/pytest test suite with options for filtering, live output tailing, and Allure report viewing
-tags: [testing, pytest, allure, runner, core]
+description: Run the Playwright (@playwright/test) test suite with options for filtering, live output tailing, and Allure report viewing
+tags: [testing, playwright, allure, runner, core]
 ---
 
 # Skill: Run Tests
@@ -9,7 +9,7 @@ tags: [testing, pytest, allure, runner, core]
 Runs the project test suite, streams live output, parses results, and optionally opens the Allure report.
 
 > **Rules**: See `agents/rules.md`
-> **Config**: `pytest.ini` (default flags), `config/settings.py` (timeouts), `.env` (credentials)
+> **Config**: `playwright.config.js` (default flags/projects), `config/settings.js` (timeouts), `.env` (credentials)
 
 ---
 
@@ -25,57 +25,58 @@ Runs the project test suite, streams live output, parses results, and optionally
 
 ## Workflow
 
-### Step 1 — Ensure venv is active and app is reachable
+### Step 1 — Ensure dependencies are installed and app is reachable
+
 ```bash
-# Activate virtual environment
-source venv/bin/activate   # Mac/Linux
-# venv\Scripts\activate    # Windows
+# Install dependencies (first run / after pulling changes)
+npm ci
+npx playwright install --with-deps
 
 # Verify BASE_URL is accessible
-python -c "from utils.config import BASE_URL; print('TARGET:', BASE_URL)"
+node -e "require('dotenv').config(); console.log('TARGET:', process.env.BASE_URL)"
 ```
 
 ### Step 2 — Choose run mode
 
-**Run ALL tests (default — uses pytest.ini settings):**
+**Run ALL tests (default — uses `playwright.config.js` settings):**
 ```bash
-pytest
+npx playwright test
 ```
-This runs with `-v -s --html=reports/html/report.html --alluredir=reports/allure-results` automatically.
+This runs with the reporters configured in `playwright.config.js` (`html` + `allure-playwright` + `list`) automatically.
 
 **Run a specific test FILE:**
 ```bash
-pytest tests/<filename>.py -v
+npx playwright test tests/<filename>.spec.js
 ```
 
-**Run a specific test FUNCTION:**
+**Run a specific test by TITLE:**
 ```bash
-pytest tests/<filename>.py::<test_function_name> -v
+npx playwright test tests/<filename>.spec.js -g "<test title>"
 ```
 
-**Run by keyword (partial name match):**
+**Run by keyword (partial title match, across all files):**
 ```bash
-pytest -k "diagnostics" -v
+npx playwright test -g "diagnostics"
 ```
 
-**Run by parametrize mark:**
+**Run against a specific browser project:**
 ```bash
-pytest tests/diagnostics_tests.py -k "CCM Software Version" -v
+npx playwright test --project=chromium
 ```
 
-**Run ONLY failed tests from last run:**
+**Run ONLY failed tests from the last run:**
 ```bash
-pytest --lf -v
+npx playwright test --last-failed
 ```
 
 **Run with visible browser (overrides HEADLESS=true in .env):**
 ```bash
-HEADLESS=false pytest -v
+npx playwright test --headed
 ```
 
 ### Step 3 — Parse and summarise results
 After the run completes, report to the user:
-- Total: passed / failed / skipped / errors
+- Total: passed / failed / skipped / flaky
 - List of failed test names with their error summary
 - Time taken
 
@@ -83,19 +84,25 @@ After the run completes, report to the user:
 
 **Serve interactive Allure report:**
 ```bash
-allure serve reports/allure-results
+npx allure serve reports/allure-results
 ```
 
 **Or generate static HTML:**
 ```bash
-allure generate reports/allure-results -o reports/allure-html --clean
+npx allure generate reports/allure-results -o reports/allure-report --clean
 ```
 
-**OR use the project's helper script:**
+**Or view Playwright's own HTML report:**
 ```bash
-python run_tests.py
+npx playwright show-report reports/html
 ```
-(This runs pytest + auto-opens Allure)
+
+**OR use the project's npm scripts:**
+```bash
+npm test              # runs the suite
+npm run allure:serve  # runs + opens Allure
+npm run report        # opens the Playwright HTML report
+```
 
 ---
 
@@ -104,10 +111,10 @@ python run_tests.py
 | Error | Likely cause | Fix |
 |-------|-------------|-----|
 | `TimeoutError` on locator | Stale locator or slow page load | Use `debug-test` skill |
-| `fixture 'page' not found` | Wrong conftest scope | Check `tests/conftest.py` scope |
-| `ModuleNotFoundError` | Missing import or bad page object name | Check `pages/` for typo |
-| `AssertionError` | UI changed or expected result wrong | Update page object or assertion |
-| `playwright._impl._errors.Error: Target page, context or browser has been closed` | fixture scope mismatch | Switch from `function` to `module` scope |
+| `Cannot find module '../pages/...'` | Wrong relative import path or bad page-object filename | Check `pages/` for typo |
+| `TypeError: page.locator is not a function` | Wrong fixture/argument passed to a page-object constructor | Verify the test destructures `{ page }` from the test callback |
+| `expect(...).toBe(...)` failure | UI changed or expected result wrong | Update page object or assertion |
+| `page.click: Target closed` | Test navigated away or closed context mid-step | Check for a stray `page.close()`/unawaited navigation |
 
 ---
 
@@ -115,11 +122,11 @@ python run_tests.py
 
 If tests are slow, check:
 ```bash
-# Profile which tests take longest
-pytest --durations=10
+# Playwright reports per-test duration in its HTML/list reporter output automatically
+npx playwright test --reporter=list
 ```
 
-Consider raising `MEDIUM_TIMEOUT` or `LARGE_TIMEOUT` in `.env` for flaky environments.
+Consider raising `PAGE_LOAD_TIMEOUT` or `TIMEOUT` in `.env` for flaky environments.
 
 ---
 
@@ -133,5 +140,5 @@ BROWSER=chromium
 
 Or override inline:
 ```bash
-HEADLESS=true pytest --tb=short -q
+HEADLESS=true npx playwright test --reporter=dot
 ```

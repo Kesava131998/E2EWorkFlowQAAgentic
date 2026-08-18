@@ -79,7 +79,7 @@ UI_REPO="${UI_REPO:-}"
 HEAL_BRANCH="heal/ui-pr-${UI_PR_NUMBER}-locators"
 
 # POM file to patch
-POM_FILE="pages/task_list_page.py"
+POM_FILE="pages/task_list_page.js"
 ```
 
 ---
@@ -107,12 +107,12 @@ python dashboard/utils/client.py event --type stage_start --stage baseline_run \
   --message "Running baseline regression suite…" 2>/dev/null || true
 
 python dashboard/utils/client.py event --type log --stage baseline_run \
-  --message "pytest tests/ -k 'regression' -v --timeout=30" 2>/dev/null || true
+  --message "npx playwright test -g 'regression' --workers=1" 2>/dev/null || true
 ```
 
 Run the regression suite:
 ```bash
-pytest tests/ -k "regression" -v --timeout=30 2>&1 | tee /tmp/baseline_result.txt
+npx playwright test -g "regression" --workers=1 --reporter=list 2>&1 | tee /tmp/baseline_result.txt
 BASELINE_EXIT=$?
 ```
 
@@ -188,19 +188,18 @@ python dashboard/utils/client.py event --type stage_start --stage detect_failure
   --message "Running regression suite against PR changes…" 2>/dev/null || true
 
 python dashboard/utils/client.py event --type log --stage detect_failure \
-  --message "pytest tests/ -k 'regression' -v --timeout=30" 2>/dev/null || true
+  --message "npx playwright test -g 'regression' --workers=1" 2>/dev/null || true
 ```
 
 Run regression:
 ```bash
-pytest tests/ -k "regression" -v --timeout=30 2>&1 | tee /tmp/regression_result.txt
+npx playwright test -g "regression" --workers=1 --reporter=list 2>&1 | tee /tmp/regression_result.txt
 REGRESSION_EXIT=$?
 ```
 
-Parse failures from the output:
+Parse failures from the output (Playwright's `list` reporter marks failures with `✘`):
 ```bash
-# Extract FAILED lines
-grep "FAILED" /tmp/regression_result.txt | while read line; do
+grep "✘" /tmp/regression_result.txt | while read line; do
   python dashboard/utils/client.py event --type log --stage detect_failure \
     --message "  ${line}" --level error 2>/dev/null || true
 done
@@ -220,7 +219,7 @@ If failures found, extract broken locator information from the test output and P
 
 ```bash
 # Log summary
-FAIL_COUNT=$(grep -c "FAILED" /tmp/regression_result.txt || echo 0)
+FAIL_COUNT=$(grep -c "✘" /tmp/regression_result.txt || echo 0)
 python dashboard/utils/client.py event --type log --stage detect_failure \
   --message "${FAIL_COUNT} tests failed — locator decay detected. Invoking self-heal…" \
   --level warning 2>/dev/null || true
@@ -380,7 +379,7 @@ python dashboard/utils/client.py event --type log --stage apply_heal \
 ```bash
 python dashboard/utils/client.py event --type stage_complete --stage apply_heal \
   --message "Patch applied — <N> selectors healed" --level success \
-  --data "{\"selectors_healed\":<N>,\"file\":\"${POM_FILE}\",\"artifacts\":[{\"path\":\"${POM_FILE}\",\"type\":\"python\",\"label\":\"Heal Patch\"}]}" \
+  --data "{\"selectors_healed\":<N>,\"file\":\"${POM_FILE}\",\"artifacts\":[{\"path\":\"${POM_FILE}\",\"type\":\"javascript\",\"label\":\"Heal Patch\"}]}" \
   2>/dev/null || true
 ```
 
@@ -395,20 +394,20 @@ python dashboard/utils/client.py event --type stage_start --stage verify_heal \
   --message "Re-running regression with healed locators…" 2>/dev/null || true
 
 python dashboard/utils/client.py event --type log --stage verify_heal \
-  --message "pytest tests/ -k 'regression' -v --timeout=30" 2>/dev/null || true
+  --message "npx playwright test -g 'regression' --workers=1" 2>/dev/null || true
 ```
 
 Run regression:
 ```bash
-pytest tests/ -k "regression" -v --timeout=30 2>&1 | tee /tmp/verify_result.txt
+npx playwright test -g "regression" --workers=1 --reporter=list 2>&1 | tee /tmp/verify_result.txt
 VERIFY_EXIT=$?
 ```
 
-Log each test result:
+Log each test result (Playwright's `list` reporter marks passes with `✓` and failures with `✘`):
 ```bash
-grep -E "PASSED|FAILED" /tmp/verify_result.txt | while read line; do
+grep -E "✓|✘" /tmp/verify_result.txt | while read line; do
   LEVEL="success"
-  echo "$line" | grep -q "FAILED" && LEVEL="error"
+  echo "$line" | grep -q "✘" && LEVEL="error"
   python dashboard/utils/client.py event --type log --stage verify_heal \
     --message "  ${line}" --level $LEVEL 2>/dev/null || true
 done
@@ -424,7 +423,7 @@ Tell the user and stop.
 
 On success:
 ```bash
-PASS_COUNT=$(grep -c "PASSED" /tmp/verify_result.txt || echo 0)
+PASS_COUNT=$(grep -c "✓" /tmp/verify_result.txt || echo 0)
 python dashboard/utils/client.py event --type log --stage verify_heal \
   --message "${PASS_COUNT} passed, 0 failed 🎉" --level success 2>/dev/null || true
 

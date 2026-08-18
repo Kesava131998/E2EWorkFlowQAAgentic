@@ -57,7 +57,7 @@ HITL_FEEDBACK=$(echo "$HITL_OUT" | grep "^HITL_FEEDBACK:" | sed 's/^HITL_FEEDBAC
 ```
 `hitl_gate.py` exits `0` for the approve-style option, non-zero for reject/feedback-style options. If the dashboard is unreachable, it defaults to approve so the workflow is never blocked by an offline dashboard — this is the **only** case where proceeding without an explicit user answer is acceptable; whenever the dashboard is reachable, always wait for its real response instead of guessing or asking in chat.
 
-**Stage IDs** (in execution order): `jira_fetch`, `qa_subtasks`, `test_cases`, `generate_tests`, `run_tests`, `postman_export`, `branch_create`, `commit_push`, `raise_pr`, `finalize`, `pr_review`
+**Stage IDs** (in execution order): `jira_fetch`, `qa_subtasks`, `test_cases`, `generate_tests`, `run_tests`, `jira_defects`, `postman_export`, `branch_create`, `commit_push`, `raise_pr`, `finalize`, `pr_review`
 
 **HITL checkpoint IDs**: `test-case-review`, `api-test-scope`, `postman-scope`, `test-naming-preview`, `test-execution-scope`, `failure-gate`
 
@@ -88,6 +88,7 @@ Store as:
 - `$MODULE` — computed in Stage 1 from Jira labels/components
 - `$QA_DESIGN_KEY` — QA TC Design subtask key, captured in Stage 1b
 - `$QA_EXEC_KEY` — QA TC Execution subtask key, captured in Stage 1b
+- `$DEFECT_KEY` — combined Jira Bug for failing tests, captured in Stage 4c (only set if tests failed)
 - `$PR_NUMBER` — captured in Stage 7
 
 **Dashboard health check** — best-effort, never blocks the workflow:
@@ -404,34 +405,32 @@ Proceed to Stage 2b.
 
 ### Stage 2b — Test Naming Preview
 
-**Before writing any files**, derive the proposed test function names from the approved test cases and present them in chat (for visibility) as:
+**Before writing any files**, derive the proposed test titles from the approved test cases and present them in chat (for visibility) as:
 
-| # | Function Name | Type | AC |
+| # | Test Title | Type | AC |
 |---|--------------|------|----|
-| 1 | `test_pos_select_pickup_location` | Happy Path | AC1 |
-| 2 | `test_err_invalid_pickup_location` | Negative | AC1 |
-| 3 | `test_perm_guest_cannot_book` | RBAC | AC3 |
+| 1 | `'pos: select pickup location'` | Happy Path | AC1 |
+| 2 | `'err: invalid pickup location'` | Negative | AC1 |
+| 3 | `'perm: guest cannot book'` | RBAC | AC3 |
 | … | … | … | … |
 
 Then request approval through the dashboard rather than asking in chat:
 ```bash
 HITL_OUT=$(python dashboard/utils/hitl_gate.py \
   --id "test-naming-preview" \
-  --message "Here are the test function names I'll generate. Approve to proceed, or request renames via the feedback field." \
+  --message "Here are the test titles I'll generate. Approve to proceed, or request renames via the feedback field." \
   --options "Looks good — proceed:approve:success,Request renames:reject:feedback" \
-  --context "{\"ticket\":\"$TICKET\",\"functions\":[\"test_pos_select_pickup_location\",\"test_err_invalid_pickup_location\",\"test_perm_guest_cannot_book\"],\"functions_count\":\"<N>\"}" 2>/dev/null)
+  --context "{\"ticket\":\"$TICKET\",\"functions\":[\"pos: select pickup location\",\"err: invalid pickup location\",\"perm: guest cannot book\"],\"functions_count\":\"<N>\"}" 2>/dev/null)
 HITL_EXIT=$?
 HITL_FEEDBACK=$(echo "$HITL_OUT" | grep "^HITL_FEEDBACK:" | sed 's/^HITL_FEEDBACK: //')
 ```
 - **Exit 0 (Approve)**: proceed to Stage 3.
-- **Exit 1 (Request renames)**: `$HITL_FEEDBACK` holds the rename instructions from the browser. Apply them to the planned function names, then re-run this gate.
+- **Exit 1 (Request renames)**: `$HITL_FEEDBACK` holds the rename instructions from the browser. Apply them to the planned test titles, then re-run this gate.
 - If the dashboard is unreachable, ask this in chat instead and wait for a real reply.
 
 Also capture coverage baseline now:
 ```bash
-find tests/ -name "*.py" | xargs grep -l "def test_" | wc -l
-# and count total test functions
-grep -r "def test_" tests/ --include="*.py" | wc -l
+npx playwright test --list | grep -c "›"
 ```
 Store as `$EXISTING_TEST_COUNT`.
 
@@ -445,70 +444,84 @@ python dashboard/utils/client.py event --type stage_start --stage generate_tests
 ```
 
 **API Script Generation Instructions (if applicable):**
-- **Explicit API Ticket**: Write standard Playwright API tests using the `request` fixture (`APIRequestContext`). Read the Swagger docs to construct accurate payloads and assertions.
+- **Explicit API Ticket**: Write standard Playwright API tests using the built-in `request` fixture (`APIRequestContext`). Read the Swagger docs to construct accurate payloads and assertions.
 - **UI Flow Ticket (Network Interception)**:
-  1. In the UI test, intercept the network calls (e.g., `with page.expect_response("**/api/**") as response_info:`).
+  1. In the UI test, intercept the network calls (e.g., `const [response] = await Promise.all([page.waitForResponse('**/api/**'), action()]);`).
   2. Extract the endpoint URLs, headers, and payloads called by the frontend.
   3. Consult the Swagger API Reference to understand the full schema and error codes for those intercepted endpoints.
-  4. Scaffold a separate API test file (`tests/test_api_$TICKET_lower_$MODULE.py`) that tests the Happy, Negative, and RBAC scenarios directly against the backend.
+  4. Scaffold a separate API test file (`tests/api-$TICKET_lower-$MODULE.spec.js`) that tests the Happy, Negative, and RBAC scenarios directly against the backend.
 
 **Check for existing coverage first:**
 ```bash
-grep -r "<keyword from $TICKET_SUMMARY>" tests/ --include="*.py" -l
+grep -r "<keyword from $TICKET_SUMMARY>" tests/ --include="*.spec.js" -l
 ```
 
 If partial coverage exists, report it and only generate scripts for uncovered cases.
 
+**Reuse existing page-object locators/methods before writing anything new:**
+
+1. Check whether `pages/$MODULE_page.js` already exists:
+```bash
+ls pages/${MODULE}_page.js 2>/dev/null || echo "not found"
+```
+2. **If it exists**, read it and list its current `this.*` locators and public (`test.step`-wrapped) methods. For each step in the approved test cases:
+   - If an existing method already covers the action/assertion (e.g. `clickSaveButton()`, `isModalVisible()`), call that method directly in the generated test — do **not** re-declare the locator or write a new method that duplicates it.
+   - If the action is new but a locator for that element already exists on the page object, add a new method to the *existing* class that reuses `this.<element>` — do not add a second locator for the same element.
+   - Only add a brand-new locator (following the priority order in `write-page-object.md`: `id` → `data-testid` → ARIA role/text → stable CSS class → XPath last resort) when no existing locator covers that element.
+3. **If `pages/$MODULE_page.js` does not exist**, invoke the `write-page-object` skill to scaffold it first (see Error Handling: "Page object missing for `$MODULE`"), then resume here.
+4. Never inline a `page.locator(...)`/XPath string directly inside a test function — locators only ever live inside page-object constructors, referenced via `this.*`, per project convention.
+
 **Output file** (derived at runtime):
 ```
-tests/test_$TICKET_lower_$MODULE.py
+tests/$TICKET_lower-$MODULE.spec.js
 ```
-Examples: `tests/test_scrum1_diagnostics.py`, `tests/test_proj7_permissions.py`
+Examples: `tests/scrum1-diagnostics.spec.js`, `tests/proj7-permissions.spec.js`
 
-Generate one function per test case following this template:
+Generate one `test(...)` per test case following this template — note the test body only ever calls `modulePage.<method>()`, never touches a locator directly:
 
-```python
-import pytest
-import allure
-from pages.<$MODULE>_page import <ModuleClass>
-from config.settings import settings
+```js
+const { test, expect } = require('@playwright/test');
+const { epic, feature, story } = require('allure-js-commons');
+const { <ModuleClass> } = require('../pages/<$MODULE>_page');
 
+test.describe('$TICKET: $TICKET_SUMMARY', () => {
+  test.beforeEach(async () => {
+    await epic('$TICKET: $TICKET_SUMMARY');
+    await feature('$MODULE');
+  });
 
-@allure.epic("$TICKET: $TICKET_SUMMARY")
-@allure.feature("$MODULE")
-@allure.story("AC<N>: <ac text>")
-@allure.title("<scenario name>")
-def test_pos_<sanitized_scenario>(page):
-    """
-    Jira: $TICKET
-    AC: <full ac text>
-    """
-    module_page = <ModuleClass>(page)
+  test('pos: <sanitized scenario>', async ({ page }) => {
+    await story('AC<N>: <ac text>');
+    // Jira: $TICKET
+    // AC: <full ac text>
+    const modulePage = new <ModuleClass>(page);
 
-    with allure.step("Step 1: <action>"):
-        # TODO: Implement
-        pass
+    await test.step('Step 1: <action>', async () => {
+      await modulePage.<existingOrNewMethod>(); // reused from pages/$MODULE_page.js where possible
+    });
 
-    with allure.step("Step N: Verify <outcome>"):
-        # TODO: Assert
-        pass
+    await test.step('Step N: Verify <outcome>', async () => {
+      await modulePage.<existingOrNewVerifyMethod>();
+    });
+  });
+});
 ```
 
 Naming convention (from `agents/rules.md`):
-- Happy Path → `test_pos_<action>`
-- Negative → `test_err_<action>`
-- Permission → `test_perm_<action>`
+- Happy Path → `'pos: <action>'`
+- Negative → `'err: <action>'`
+- Permission → `'perm: <action>'`
 
 Verify discoverability:
 ```bash
-/opt/miniconda3/bin/python -m pytest --collect-only tests/test_$TICKET_lower_$MODULE.py
+npx playwright test --list tests/$TICKET_lower-$MODULE.spec.js
 ```
 
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_complete --stage generate_tests --level success \
   --message "<N> test functions generated" \
-  --data "{\"test_file\":\"tests/test_${TICKET_lower}_${MODULE}.py\",\"total_functions\":\"<N>\",\"artifacts\":[{\"path\":\"tests/test_${TICKET_lower}_${MODULE}.py\",\"type\":\"python\",\"label\":\"Tests\"}]}" 2>/dev/null || true
+  --data "{\"test_file\":\"tests/${TICKET_lower}-${MODULE}.spec.js\",\"total_functions\":\"<N>\",\"artifacts\":[{\"path\":\"tests/${TICKET_lower}-${MODULE}.spec.js\",\"type\":\"javascript\",\"label\":\"Tests\"}]}" 2>/dev/null || true
 ```
 
 ---
@@ -520,15 +533,15 @@ python dashboard/utils/client.py event --type stage_complete --stage generate_te
 ```bash
 HITL_OUT=$(python dashboard/utils/hitl_gate.py \
   --id "test-execution-scope" \
-  --message "I generated <N> test functions in tests/test_${TICKET_lower}_${MODULE}.py. How would you like to run them?" \
+  --message "I generated <N> test functions in tests/${TICKET_lower}-${MODULE}.spec.js. How would you like to run them?" \
   --options "Run All Tests:approve:success,Run Selected:feedback:feedback,Skip — go to commit:reject:warning" \
-  --context "{\"total_functions\":\"<N>\",\"artifacts\":[{\"path\":\"tests/test_${TICKET_lower}_${MODULE}.py\",\"type\":\"python\",\"label\":\"Tests\"}]}" 2>/dev/null)
+  --context "{\"total_functions\":\"<N>\",\"artifacts\":[{\"path\":\"tests/${TICKET_lower}-${MODULE}.spec.js\",\"type\":\"javascript\",\"label\":\"Tests\"}]}" 2>/dev/null)
 HITL_EXIT=$?
 HITL_FEEDBACK=$(echo "$HITL_OUT" | grep "^HITL_FEEDBACK:" | sed 's/^HITL_FEEDBACK: //')
 ```
 
-- **Exit 0, no feedback (Run All)** → set `$TEST_FILTER = tests/test_$TICKET_lower_$MODULE.py`
-- **Exit 0/non-zero with `$HITL_FEEDBACK` set (Run Selected)** → set `$TEST_FILTER = -k "$HITL_FEEDBACK"` within the test file
+- **Exit 0, no feedback (Run All)** → set `$TEST_FILTER = tests/$TICKET_lower-$MODULE.spec.js`
+- **Exit 0/non-zero with `$HITL_FEEDBACK` set (Run Selected)** → set `$TEST_FILTER = tests/$TICKET_lower-$MODULE.spec.js -g "$HITL_FEEDBACK"`
 - **Exit 1, no feedback (Skip)** → set `$SKIP_RUN = true`, jump directly to Stage 4b / Stage 5
 - If the dashboard is unreachable, ask this in chat instead and wait for a real reply.
 
@@ -544,28 +557,32 @@ python dashboard/utils/client.py event --type stage_start --stage run_tests --me
 ```
 
 ```bash
-/opt/miniconda3/bin/python -m pytest $TEST_FILTER -v --reruns=1 --reruns-delay=2
+npx playwright test $TEST_FILTER --headed --retries=1
 ```
 
-**Retry behaviour**: `--reruns=1` silently retries each failing test once before marking it failed. This filters out transient flakiness. Only tests that fail on both attempts are considered truly failed.
+**Headed mode**: `--headed` runs the suite with a visible browser window so execution can be watched live, overriding `settings.HEADLESS` for this run.
+
+**Retry behaviour**: `--retries=1` silently retries each failing test once before marking it failed. This filters out transient flakiness. Only tests that fail on both attempts are considered truly failed.
 
 Parse and display:
 - Total: passed / failed / skipped / errors
 - Failed test names with error summaries (only after retry)
 - Time taken
 
-Collect failure artifacts for failed tests:
+Collect failure artifacts for failed tests (Playwright writes these into `test-results/<test-folder>/` automatically per `playwright.config.js`'s `outputDir`):
 ```bash
 # List any screenshots captured
-find screenshots/ -newer reports/allure-results -name "*.png" 2>/dev/null
+find test-results/ -name "*.png" 2>/dev/null
 # List any videos captured
-find videos/ -newer reports/allure-results -name "*.webm" -o -name "*.mp4" 2>/dev/null
+find test-results/ -name "*.webm" 2>/dev/null
+# List any trace files captured
+find test-results/ -name "trace.zip" 2>/dev/null
 ```
 Store artifact paths as `$FAILURE_SCREENSHOTS` and `$FAILURE_VIDEOS`.
 
 Open Allure report:
 ```bash
-allure serve reports/allure-results
+npx allure serve reports/allure-results
 ```
 
 ```bash
@@ -676,21 +693,71 @@ python dashboard/utils/client.py event --type stage_complete --stage postman_exp
 
 ### ⏸ HITL CHECKPOINT 2 — Test Failure Gate
 
-**Skip this checkpoint entirely if all tests passed** — set `$DRAFT = false` and proceed automatically to Stage 5.
+**Note: the PR raised in Stage 7 is always opened as a draft, regardless of test outcome** — see Stage 7. This checkpoint only decides whether to proceed now or fix failures first.
+
+**Skip this checkpoint entirely if all tests passed** — proceed automatically to Stage 5.
 
 **If any tests FAILED**, list the failures in chat, then request the decision through the dashboard:
 
 ```bash
 HITL_OUT=$(python dashboard/utils/hitl_gate.py \
   --id "failure-gate" \
-  --message "<N> test(s) failed. Continue as draft PR or fix first?" \
+  --message "<N> test(s) failed. Continue with a draft PR or fix first?" \
   --options "Continue as Draft:approve:warning,Fix Failures First:reject:danger" \
   --context "{\"failed\":\"<N>\",\"failures\":\"<list>\"}" 2>/dev/null)
 HITL_EXIT=$?
 ```
 - **Exit 1 (Fix Failures First)** → invoke `debug-test` skill per failing test, then re-run Stage 4 (note: `$QA_EXEC_KEY` was already marked Done after the first run and does not need to be re-transitioned)
-- **Exit 0 (Continue as Draft)** → proceed with `$DRAFT = true`
+- **Exit 0 (Continue as Draft)** → proceed to Stage 4c
 - If the dashboard is unreachable, ask this in chat instead and wait for a real reply — do not silently default to "Continue" on a failure gate.
+
+---
+
+### Stage 4c — Create Jira Defect for Failed Tests
+
+**Skip this stage entirely if all tests passed, or if `$SKIP_RUN = true`.**
+
+```bash
+# 📊 Dashboard
+python dashboard/utils/client.py event --type stage_start --stage jira_defects --message "Logging failures as a Jira defect..." 2>/dev/null || true
+```
+
+Create **one combined Jira Bug** covering every test that is still failing after retries (and after any fix attempt from Checkpoint 2) — never one issue per failing test.
+
+```
+jira_create_issue(
+  parent=$TICKET,
+  issue_type="Bug",
+  summary="[$TICKET] <N> automation test(s) failing — $TICKET_SUMMARY",
+  description="""
+  Story: $TICKET ($TICKET_SUMMARY)
+  Branch/run: $BRANCH (or 'pending' if not yet created)
+
+  Failed tests:
+  - <test_name_1>: <error summary>
+  - <test_name_2>: <error summary>
+  ...
+
+  Screenshots: $FAILURE_SCREENSHOTS
+  Videos: $FAILURE_VIDEOS
+  """
+)
+```
+
+Capture the returned key as `$DEFECT_KEY`. Link it to the parent story:
+```
+jira_update_issue(issue_key=$TICKET, link={"type": "relates to", "issue": $DEFECT_KEY})
+```
+If a dedicated link call isn't available, note the relation in the Bug description instead (already included above) and proceed — this stage never blocks the workflow on a linking failure.
+
+Confirm: `"🐞 $DEFECT_KEY created — <N> failing test(s) logged against $TICKET"`
+
+```bash
+# 📊 Dashboard
+python dashboard/utils/client.py event --type stage_complete --stage jira_defects --level success \
+  --message "$DEFECT_KEY created for <N> failing test(s)" \
+  --data "{\"defect_key\":\"$DEFECT_KEY\",\"failed_count\":\"<N>\"}" 2>/dev/null || true
+```
 
 ---
 
@@ -759,15 +826,15 @@ python dashboard/utils/client.py event --type stage_start --stage commit_push --
 ```
 
 **Pre-commit checks** (from `agents/rules.md`) — block on any violation:
-- [ ] No `print()` statements in page objects or tests
+- [ ] No `console.log()` statements in page objects or tests
 - [ ] No raw integer timeouts — must use `settings.*_TIMEOUT`
-- [ ] All new page methods have `@allure.step(...)`
-- [ ] Test function names follow `test_pos_` / `test_err_` / `test_perm_` convention
+- [ ] All new page action methods wrapped in `test.step(...)`
+- [ ] Test titles follow `'pos: ...'` / `'err: ...'` / `'perm: ...'` convention
 - [ ] No hardcoded credentials or URLs
 
 Stage files:
 ```bash
-git add tests/test_$TICKET_lower_$MODULE.py
+git add tests/$TICKET_lower-$MODULE.spec.js
 git add plans/manual_tests_$TICKET_lower_*.md
 git add plans/manual_tests_$TICKET_lower_*.csv
 git add plans/postman_$TICKET_lower_*.json  # only if $EXPORT_POSTMAN = true
@@ -815,11 +882,11 @@ python dashboard/utils/client.py event --type stage_start --stage raise_pr --mes
 > QA Execution: https://innocito.atlassian.net/browse/$QA_EXEC_KEY (Done)
 
 ## 📋 Test Coverage
-| AC | Test Function | Type | Status |
+| AC | Test Title | Type | Status |
 |----|--------------|------|--------|
-| AC1 | `test_pos_...` | Happy Path | ✅ Passed |
-| AC1 | `test_err_...` | Negative | ✅ Passed |
-| AC2 | `test_perm_...` | RBAC | ⚠️ Failed |
+| AC1 | `'pos: ...'` | Happy Path | ✅ Passed |
+| AC1 | `'err: ...'` | Negative | ✅ Passed |
+| AC2 | `'perm: ...'` | RBAC | ⚠️ Failed |
 
 **Coverage delta: $EXISTING_TEST_COUNT → $EXISTING_TEST_COUNT + <N> tests (+<N> for $TICKET)**
 
@@ -831,19 +898,23 @@ python dashboard/utils/client.py event --type stage_start --stage raise_pr --mes
 ## ⚠️ Failures
 | Test | Error Summary |
 |------|--------------|
-| `test_err_...` | AssertionError: expected 400 got 200 |
+| `'err: ...'` | expect(received).toBe(expected): expected 400, got 200 |
 
 **Artifacts:**
 <list $FAILURE_SCREENSHOTS paths>
 <list $FAILURE_VIDEOS paths>
+
+**Defect:** https://innocito.atlassian.net/browse/$DEFECT_KEY
 </if>
 
 ## 🚀 Run Locally
 \`\`\`bash
-pip install -r requirements.txt
-python -m pytest tests/test_$TICKET_lower_$MODULE.py -v
+npm ci
+npx playwright test tests/$TICKET_lower-$MODULE.spec.js
 \`\`\`
 ```
+
+**Every PR raised by this workflow is opened as a draft** — `draft` is always `true`, regardless of whether all tests passed:
 
 ```
 mcp__github__create_pull_request(
@@ -853,7 +924,7 @@ mcp__github__create_pull_request(
   head=$BRANCH,
   base="main",
   body=<rendered body>,
-  draft=$DRAFT
+  draft=true
 )
 ```
 
@@ -862,8 +933,8 @@ Capture `$PR_NUMBER` from the response. Display PR URL to the user.
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_complete --stage raise_pr --level success \
-  --message "PR #$PR_NUMBER raised" \
-  --data "{\"pr_number\":\"$PR_NUMBER\",\"pr_url\":\"<url>\",\"draft\":\"$DRAFT\"}" 2>/dev/null || true
+  --message "Draft PR #$PR_NUMBER raised" \
+  --data "{\"pr_number\":\"$PR_NUMBER\",\"pr_url\":\"<url>\",\"draft\":\"true\"}" 2>/dev/null || true
 
 python dashboard/utils/client.py event --type stage_start --stage finalize --message "Wrapping up — saving run summary..." 2>/dev/null || true
 ```
@@ -941,7 +1012,7 @@ The review agent independently:
 After it completes, surface to the user:
 - Review decision and key findings
 - Link to the posted GitHub review
-- Recommended next step (merge / fix and re-push)
+- Recommended next step (mark ready for review / fix and re-push)
 
 **Save the run summary file now** (see **Final Status Summary** below) before firing the completion events, so the artifact is readable the moment the dashboard shows the workflow as done:
 
@@ -988,13 +1059,14 @@ Jira    : https://innocito.atlassian.net/browse/$TICKET
 | Test Cases Derived | ✅ | <N> cases → plans/manual_tests_*.md & .csv |
 | CSV Attached to QA Design | ✅/⚠️ | $QA_DESIGN_KEY (or: attach failed, see note) |
 | QA TC Design → Done | ✅ | $QA_DESIGN_KEY |
-| Scripts Generated | ✅ | tests/test_$TICKET_lower_$MODULE.py |
-| Test Run | ✅/⚠️ | <N> passed / <M> failed |
+| Scripts Generated | ✅ | tests/$TICKET_lower-$MODULE.spec.js |
+| Test Run (headed) | ✅/⚠️ | <N> passed / <M> failed |
 | QA TC Execution → Done | ✅ | $QA_EXEC_KEY |
+| Jira Defect Created | ✅/⏭️ | $DEFECT_KEY (or: skipped, all tests passed) |
 | Postman Export | ✅/⏭️ | plans/postman_*.json (or skipped) |
 | Branch Created | ✅ | $BRANCH |
 | Commit + Push | ✅ | <commit hash> |
-| PR Raised | ✅ | <PR URL> (draft: yes/no) |
+| PR Raised | ✅ | <PR URL> (draft: yes) |
 | PR Review | ✅ | APPROVE / REQUEST_CHANGES |
 
 ## Coverage Delta
@@ -1003,8 +1075,8 @@ Before: $EXISTING_TEST_COUNT tests | After: $EXISTING_TEST_COUNT+<N> tests | Add
 ## AC Coverage
 | AC | Tests | All Passing? |
 |----|-------|-------------|
-| AC1 | test_pos_..., test_err_... | ✅ |
-| AC2 | test_perm_... | ⚠️ 1 failing |
+| AC1 | 'pos: ...', 'err: ...' | ✅ |
+| AC2 | 'perm: ...' | ⚠️ 1 failing |
 ```
 
 Confirm to the user: `"📄 Run summary saved to plans/run_summary_$TICKET_lower_<date>.md — ready to share!"`
@@ -1029,3 +1101,4 @@ Confirm to the user: `"📄 Run summary saved to plans/run_summary_$TICKET_lower
 | GitHub MCP not authenticated | Stop — prompt user to check `.mcp.json` |
 | Any outcome at Stage 8 | Never post a Jira comment — report results in chat and in `plans/run_summary_*.md` only |
 | CSV attach to `$QA_DESIGN_KEY` fails | Report the failure to the user, continue the workflow anyway (does not block the "Done" transition or any later stage) |
+| `jira_create_issue` for the combined defect fails | Report the failure to the user, still proceed to Stage 5 — the run summary and PR body already list the failures directly |

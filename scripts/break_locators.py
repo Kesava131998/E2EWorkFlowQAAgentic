@@ -2,8 +2,8 @@
 """
 Locator decay simulator for the self-heal demo.
 
-Targets two locators in pages/task_list_page.py that are exercised by
-tests/ui/test_task_list_regression.py.  Supports break and restore.
+Targets two locators in pages/task_list_page.js that are exercised by
+tests/ui/task-list-regression.spec.js.  Supports break and restore.
 
 Usage:
   python scripts/break_locators.py --break-locators
@@ -13,7 +13,7 @@ import argparse
 import os
 import sys
 
-PAGE_FILE = os.path.join("pages", "task_list_page.py")
+PAGE_FILE = os.path.join("pages", "task_list_page.js")
 
 # ── Locator pairs: (real, broken) ──────────────────────────────────────────
 LOCATORS = [

@@ -53,14 +53,14 @@ Gather context from the just-completed session. Check the following in order:
 
 **From test runs (`run-tests` / `debug-test`):**
 ```bash
-# Last pytest output summary
-tail -50 pytestdebug.log
+# Last Playwright HTML/list reporter output summary
+npx playwright show-report reports/html --host=127.0.0.1 &  # or read reports/html/index.html directly
 
-# Any new skip/xfail markers added
-grep -r "pytest.skip\|pytest.xfail" tests/ --include="*.py" -n
+# Any new skip/fixme markers added
+grep -rn "test.skip\|test.fixme" tests/ --include="*.spec.js"
 
 # Timeout values used
-grep -r "wait_for_timeout\|TIMEOUT" tests/ pages/ --include="*.py" -n | grep -v "settings\."
+grep -rn "waitForTimeout\|timeout:" tests/ pages/ --include="*.js" | grep -v "settings\."
 ```
 
 **From test generation (`generate-tests`):**
@@ -69,7 +69,7 @@ grep -r "wait_for_timeout\|TIMEOUT" tests/ pages/ --include="*.py" -n | grep -v 
 ls -lt tests/ | head -10
 
 # TODO stubs left (unresolved steps)
-grep -r "# TODO: Implement" tests/ --include="*.py" -n
+grep -rn "// TODO: Implement" tests/ --include="*.spec.js"
 
 # Column aliases that got fuzzy-matched (not in standard schema)
 # (read from the test generator's output or user conversation)
@@ -81,7 +81,7 @@ grep -r "# TODO: Implement" tests/ --include="*.py" -n
 ls -lt pages/ | head -5
 
 # New locator strategies
-grep -r "data-testid\|aria-\|role=" pages/ --include="*.py" -n
+grep -rn "data-testid\|getByRole\|getByLabel" pages/ --include="*.js"
 ```
 
 **From project review (`project-review`):**
@@ -100,7 +100,7 @@ For each piece of evidence, apply these detection rules:
 #### 2a. Detect recurring failures
 ```bash
 # Count how many distinct sessions had TimeoutError
-grep -c "TimeoutError" pytestdebug.log
+grep -rc "TimeoutError" reports/html/index.html reports/allure-results/*.json 2>/dev/null
 ```
 - If ≥ 2 TimeoutErrors on the **same element/page**: → add to `debug-test.md` "Common root causes" table
 - If all in same module: → add a module-specific note in `run-tests.md` "Common failure patterns"
@@ -116,11 +116,11 @@ grep -c "TimeoutError" pytestdebug.log
   → add the alias to the "Expected columns" table in `generate-tests.md`
 
 #### 2d. Detect TODO leftovers
-- If `# TODO: Implement` stubs were NOT resolved:
+- If `// TODO: Implement` stubs were NOT resolved:
   → add a note to `generate-tests.md` "Step 5 — Fix TODOs" about this class of unresolvable step
 
 #### 2e. Detect new known issues
-- If a `pytest.skip("Known issue")` was added referencing a Jira ticket:
+- If a `test.skip(true, 'Known issue')` was added referencing a Jira ticket:
   → record in `debug-test.md` "Common root causes" with the ticket and module
 
 #### 2f. Detect architecture deviation

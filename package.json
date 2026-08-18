@@ -1,0 +1,26 @@
+{
+  "name": "ai-test-workflow-revflow",
+  "version": "1.0.0",
+  "description": "RevFlow Playwright automation suite (JavaScript / @playwright/test)",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "report": "playwright show-report",
+    "allure:generate": "allure generate reports/allure-results --clean --output reports/allure-report",
+    "allure:open": "allure open reports/allure-report",
+    "allure:serve": "allure serve reports/allure-results",
+    "install:browsers": "playwright install --with-deps"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "allure-commandline": "^2.30.0",
+    "allure-js-commons": "^2.15.1",
+    "allure-playwright": "^2.15.1"
+  }
+}

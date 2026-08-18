@@ -47,40 +47,40 @@ For each file from the files tool, read its patch/diff content.
 ### Step 3 — Analyse each changed file
 
 **For files in `pages/`:**
-- [ ] Class inherits `BasePage`?
-- [ ] All locators defined in `__init__` as `self.*`?
-- [ ] All methods have `@allure.step(...)`?
-- [ ] No assertions inside page methods?
-- [ ] No raw `page.locator(...)` strings inside methods (should use `self.*`)?
+- [ ] Class extends `BasePage`?
+- [ ] All locators defined in the constructor as `this.*`?
+- [ ] All action methods wrapped in `test.step(...)`?
+- [ ] No assertions (`expect(...)`) inside page methods?
+- [ ] No raw `this.page.locator(...)` strings inside methods (should use `this.*`)?
 
 **For files in `tests/`:**
-- [ ] File starts with `test_`?
-- [ ] Test function names use `test_pos_` / `test_err_` / `test_perm_` prefix?
-- [ ] `test_err_` tests assert the specific error message — not just that an exception occurred?
-- [ ] Uses `page` fixture — not direct `sync_playwright()`?
-- [ ] Steps wrapped in `with allure.step(...)`?
-- [ ] Parametrize used for data-driven variants?
+- [ ] File ends with `.spec.js`?
+- [ ] Test titles use `'pos: ...'` / `'err: ...'` / `'perm: ...'` prefix?
+- [ ] `'err: ...'` tests assert the specific error message — not just that something failed?
+- [ ] Uses the built-in `page` fixture — not a manually launched `chromium.launch()`?
+- [ ] Steps wrapped in `await test.step(...)`?
+- [ ] Data-driven variants use a loop over a data array, not copy-pasted tests?
 - [ ] No raw integer timeouts — uses `settings.*_TIMEOUT`?
-- [ ] Known issue workarounds use `pytest.skip("Known issue — <url>")` with ticket link?
+- [ ] Known issue workarounds use `test.skip(true, 'Known issue — <url>')` with ticket link?
 
-**For `conftest.py`:**
-- [ ] Fixture scope is appropriate (`module` for login session, `function` for isolated)?
-- [ ] Screenshot on failure is hooked?
+**For `playwright.config.js`:**
+- [ ] Reporter/project config is appropriate (browsers matrix, retries)?
+- [ ] Screenshot/video/trace capture set to failure-only?
 
 **For `utils/` or `config/`:**
 - [ ] No hardcoded credentials?
-- [ ] `settings.py` uses `os.getenv()` with sensible defaults?
+- [ ] `settings.js` uses `process.env.*` with sensible defaults?
 
-**For `requirements.txt`:**
+**For `package.json`:**
 - [ ] No yanked/vulnerable packages?
-- [ ] Versions pinned or reasonably bounded?
+- [ ] Versions pinned or reasonably bounded (`^x.y.z`)?
 
 ### Step 4 — Build review body
 
 Use this template:
 
 ```markdown
-## PR Review — playwright_python Standards Check
+## PR Review — @playwright/test Standards Check
 
 **PR**: #<number> — <title>
 **Author**: @<author>
@@ -96,13 +96,13 @@ Use this template:
 
 | File | Line | Issue | Rule |
 |------|------|-------|------|
-| `pages/x_page.py` | 23 | Missing `@allure.step` on `click_button()` | rules.md §3 |
-| `tests/x_test.py` | 41 | Raw timeout `3000` — use `settings.SMALL_TIMEOUT` | rules.md §11 |
+| `pages/x_page.js` | 23 | `clickButton()` not wrapped in `test.step(...)` | rules.md §3 |
+| `tests/x.spec.js` | 41 | Raw timeout `3000` — use `settings.SHORT_TIMEOUT` | rules.md §11 |
 
 ### ⚠️ Suggestions (optional improvements)
 
-- `pages/x_page.py` — Consider using CSS selector instead of XPath on line 17 for resilience
-- `tests/x_test.py` — This test is data-driven but not using `@pytest.mark.parametrize`
+- `pages/x_page.js` — Consider using a CSS/`data-testid` selector instead of XPath on line 17 for resilience
+- `tests/x.spec.js` — This test is data-driven but iterates via copy-paste instead of looping over a data array
 
 ### 📋 Summary
 

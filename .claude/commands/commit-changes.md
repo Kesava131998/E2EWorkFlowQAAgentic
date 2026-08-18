@@ -46,14 +46,14 @@ Analyse the diff for violations of `agents/rules.md`:
 
 | Check | What to look for |
 |-------|-----------------|
-| ❌ Raw integers in wait | `wait_for_timeout(3000)` not via `settings.*` |
+| ❌ Raw integers in wait | `waitForTimeout(3000)` / `{ timeout: 3000 }` not via `settings.*` |
 | ❌ Hardcoded credentials | strings matching URL/password patterns |
-| ❌ print() debug statements | `print(` in page objects or tests |
-| ❌ Missing @allure.step | new page methods without the decorator |
-| ❌ BasePage not inherited | new page class missing `(BasePage)` |
-| ❌ Commented-out test code | large blocks of `#` without `# TODO:` |
-| ❌ pytest.skip without reason | bare `pytest.skip()` calls |
-| ❌ Wrong test name prefix | `def test_something` not using `test_pos_` / `test_err_` / `test_perm_` |
+| ❌ console.log() debug statements | `console.log(` in page objects or tests |
+| ❌ Missing test.step wrapping | new page action methods not wrapped in `test.step(...)` |
+| ❌ BasePage not extended | new page class missing `extends BasePage` |
+| ❌ Commented-out test code | large blocks of `//` without `// TODO:` |
+| ❌ test.skip without reason | bare `test.skip()` calls with no message |
+| ❌ Wrong test title prefix | test title not starting with `'pos: '` / `'err: '` / `'perm: '` |
 | ⚠️ TODO comments | flag but don't block |
 | ⚠️ No Jira reference | remind to add `Refs: SCRUM-XXX` in body if a ticket is active |
 

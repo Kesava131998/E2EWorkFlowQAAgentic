@@ -71,17 +71,17 @@ Number each AC: AC1, AC2, AC3…
 
 Before generating anything, search for existing coverage:
 ```bash
-grep -r "<keyword from ticket summary>" tests/ --include="*.py" -l
-grep -r "<keyword>" tests/ --include="*.py" -n
+grep -r "<keyword from ticket summary>" tests/ --include="*.spec.js" -l
+grep -r "<keyword>" tests/ --include="*.spec.js" -n
 ```
 
 Build a coverage table:
 
-| AC | Status | Test File | Test Function |
+| AC | Status | Test File | Test Title |
 |----|--------|-----------|---------------|
-| AC1: User can log in | ✅ Covered | `tests/test_login.py` | `test_pos_login_valid_user` |
+| AC1: User can log in | ✅ Covered | `tests/login.spec.js` | `'pos: login with valid user'` |
 | AC2: Error on bad password | ❌ Not covered | — | — |
-| AC3: Session persists | ⚠️ Partial | `tests/test_login.py` | `test_pos_login_session` |
+| AC3: Session persists | ⚠️ Partial | `tests/login.spec.js` | `'pos: login session persists'` |
 
 ### Step 4a — If fully covered
 Report coverage. Offer next steps:
@@ -89,38 +89,39 @@ Report coverage. Offer next steps:
 - Raise PR → `/raise-pr`
 
 ### Step 4b — If gaps found
-Generate a stub per uncovered AC following the naming convention from `agents/rules.md`:
+Generate a stub per uncovered AC following the naming convention from `agents/rules.md`. Before writing any locators, check `pages/<module>_page.js` for existing ones to reuse (see the Locator sourcing rule in `.claude/CLAUDE.md`):
 
-```python
-import pytest
-import allure
-from pages.<module>_page import <ModulePage>
-from config.settings import settings
+```js
+const { test, expect } = require('@playwright/test');
+const { epic, feature, story } = require('allure-js-commons');
+const { <ModulePage> } = require('../pages/<module>_page');
 
+test.describe('<TICKET-KEY>: <ticket summary>', () => {
+  test.beforeEach(async () => {
+    await epic('<TICKET-KEY>: <ticket summary>');
+    await feature('<component>');
+  });
 
-@allure.epic("<TICKET-KEY>: <ticket summary>")
-@allure.feature("<component>")
-@allure.story("AC<N>: <ac text>")
-@allure.title("<ac text>")
-def test_pos_<sanitized_ac_name>(page):
-    """
-    Jira: <TICKET-KEY>
-    AC: <full acceptance criteria text>
-    """
-    <module>_page = <ModulePage>(page)
+  test('pos: <sanitized ac name>', async ({ page }) => {
+    await story('AC<N>: <ac text>');
+    // Jira: <TICKET-KEY>
+    // AC: <full acceptance criteria text>
+    const modulePage = new <ModulePage>(page);
 
-    with allure.step("Step 1: <first action>"):
-        # TODO: Implement
-        pass
+    await test.step('Step 1: <first action>', async () => {
+      // TODO: Implement
+    });
 
-    with allure.step("Step N: Verify <expected outcome>"):
-        # TODO: Assert
-        pass
+    await test.step('Step N: Verify <expected outcome>', async () => {
+      // TODO: Assert
+    });
+  });
+});
 ```
 
-Generate both `test_pos_` and `test_err_` stubs where the AC implies error handling.
+Generate both `'pos: ...'` and `'err: ...'` stubs where the AC implies error handling.
 
-Save to `tests/test_<ticket-key-lowercase>_<module>.py`
+Save to `tests/<ticket-key-lowercase>-<module>.spec.js`
 
 ### Step 5 — Offer manual test cases
 
@@ -147,7 +148,7 @@ Save to `plans/manual_tests_<ticket-key>_<date>.md` if the user wants to keep th
 ```
 jira_add_comment(
   issue_key="SCRUM-123",
-  body="Automation analysis complete.\n\nCoverage: X/Y ACs.\nGaps: AC2, AC3.\nStubs: tests/test_scrum123_<module>.py\n\nNext: implement stubs and raise PR."
+  body="Automation analysis complete.\n\nCoverage: X/Y ACs.\nGaps: AC2, AC3.\nStubs: tests/scrum123-<module>.spec.js\n\nNext: implement stubs and raise PR."
 )
 ```
 

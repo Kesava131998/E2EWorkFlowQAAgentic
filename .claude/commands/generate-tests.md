@@ -1,15 +1,15 @@
 ---
 name: generate-tests
-description: Generate Playwright Python test scripts from Excel test cases using the project's page object pattern
+description: Generate Playwright JavaScript (@playwright/test) test scripts from Excel test cases using the project's page object pattern
 tags: [test-generation, excel, playwright, core]
 ---
 
 # Skill: Generate Tests from Excel
 
-Reads manual test cases from an Excel file and generates pytest + Playwright test scripts,
+Reads manual test cases from an Excel file and generates `@playwright/test` scripts,
 automatically mapping Excel steps to page object methods.
 
-> **Source**: `utils/test_generator.py`
+> **Source**: `utils/test_generator.js`
 > **Rules**: See `agents/rules.md` — Page Objects, Tests, Timeouts, Test Naming Conventions
 
 ---
@@ -27,18 +27,17 @@ automatically mapping Excel steps to page object methods.
 ### Step 0 — Explore first
 Before generating, search for existing tests that may already cover these cases:
 ```bash
-grep -r "<keyword from test case name>" tests/ --include="*.py" -l
+grep -r "<keyword from test case name>" tests/ --include="*.spec.js" -l
 ```
 If coverage already exists, report it and ask the user if they want to supplement or replace.
 
 ### Step 1 — Validate prerequisites
 ```bash
-# From project root, with venv active:
-python -c "import pandas, openpyxl; print('OK')"
+node -e "require('xlsx'); console.log('OK')"
 ```
 If this fails, run:
 ```bash
-pip install pandas openpyxl
+npm install --save-dev xlsx
 ```
 
 ### Step 2 — Inspect the Excel file
@@ -59,25 +58,25 @@ Before running, open the file and check:
 
 ### Step 3 — Run the generator
 ```bash
-python utils/test_generator.py <path-to-excel-file>
+node utils/test_generator.js <path-to-excel-file>
 ```
 
 ### Step 4 — Review generated output
 - Show the user the list of generated files
 - Display a sample of the generated code for the first test case
-- Flag any steps that landed as `# TODO: Implement` (no matching page method found)
+- Flag any steps that landed as `// TODO: Implement` (no matching page method found)
 
 ### Step 5 — Fix TODOs (if asked)
-For each `# TODO: Implement` step:
+For each `// TODO: Implement` step:
 1. Check if the action can be added to an existing page object
 2. If so, use the `write-page-object` skill to add the missing method
 3. Re-run the step manually in the generated test
 
 ### Step 6 — Verify generated tests are discoverable
 ```bash
-pytest --collect-only tests/
+npx playwright test --list
 ```
-Every generated file should appear. If not, check the filename starts with `test_`.
+Every generated file should appear. If not, check the filename ends with `.spec.js`.
 
 ### Step 7 — Offer manual test cases
 
@@ -123,25 +122,24 @@ Ensure the CSV is properly formatted with commas and appropriate quoting for tex
 
 Generated files go to `tests/` and follow this naming pattern:
 ```
-test_<module>_<test_id_lower>.py
+<module>-<test_id_lower>.spec.js
 ```
-Example: `tests/test_diagnostics_tc001.py`
+Example: `tests/diagnostics-tc001.spec.js`
 
-Generated test functions follow naming conventions from `agents/rules.md`:
-- `test_pos_<action>` for happy path
-- `test_err_<action>` for error/negative cases
+Generated test titles follow naming conventions from `agents/rules.md`:
+- `'pos: <action>'` for happy path
+- `'err: <action>'` for error/negative cases
 
 Generated code always includes:
-- `@allure.title()` and `@allure.description()` decorators
-- Steps wrapped in `with allure.step("..."):`
-- `page.wait_for_timeout(settings.SMALL_TIMEOUT)` between steps
-- Page object instantiation at the top of the function
+- `test.describe(...)` grouping with an Allure `epic`/`feature`/`story` call (`allure-js-commons`) in a `beforeEach`
+- Steps wrapped in `await test.step("...", async () => { ... })`
+- Page object instantiation at the top of the test callback
 
 ---
 
 ## Notes
 
-- Intelligent keyword matching maps "Click Login" → `login_page.click_login()`
-- Module column hints which page object to use (e.g., `Module: Diagnostics` → `DiagnosticPage`)
+- Intelligent keyword matching maps "Click Login" → `loginPage.clickLoginButton()`
+- Module column hints which page object to use (e.g., `Module: Diagnostics` → `DiagnosticsPage`)
 - All generated tests use `settings.*_TIMEOUT` — never raw integers
 - If a new page is needed, run `write-page-object` skill first, then re-generate

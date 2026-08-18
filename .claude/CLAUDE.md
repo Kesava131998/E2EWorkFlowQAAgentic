@@ -1,4 +1,4 @@
-# CLAUDE.md — Playwright Automation Project
+# CLAUDE.md — Playwright Automation Project (JavaScript)
 
 > This file configures **Claude Code** for this project.
 > Rules are summarized below. Commands live in `.claude/commands/`.
@@ -39,18 +39,19 @@
 
 ## Project Rules
 
-Follow these conventions for the Playwright Python automation project:
+Follow these conventions for the Playwright JavaScript automation project (`@playwright/test`):
 
-- **Page Objects**: All page classes inherit from `BasePage`, use `@allure.step` decorators on all public methods, define locators in `__init__`
-- **Tests**: Use the `page` fixture from `tests/conftest.py`, wrap steps in `with allure.step(...)`, use `settings.*_TIMEOUT` for timeouts
-- **Configuration**: Load settings from `config/settings.py`, use `.env` for environment variables, no hardcoded credentials
+- **Page Objects**: All page classes extend `BasePage` (`pages/base_page.js`), wrap public methods in `test.step(...)` for reporting, define locators in the constructor
+- **Locator sourcing**: Always check the existing `pages/*.js` codebase for a matching locator/method first (`grep -n "this\.\w* = " pages/*.js`) and reuse it. Only fall back to Playwright MCP live DOM inspection for elements that genuinely don't exist yet anywhere in `pages/` — never use MCP as the default way to (re)write locators that are already defined in the codebase.
+- **Tests**: Use the built-in `page` fixture from `@playwright/test`, wrap steps in `test.step(...)`, use `settings.*_TIMEOUT` for timeouts, tag titles with `pos:`/`err:`/`perm:` prefixes per scenario type
+- **Configuration**: Load settings from `config/settings.js`, use `.env` (via `dotenv`) for environment variables, no hardcoded credentials
 - **Timeouts**: Never use raw integers; always use `settings.*_TIMEOUT` or environment variables
 - **Commits**: Use Conventional Commits format (`feat|fix|test|refactor|chore|docs`)
-- **Dependencies**: Install from `requirements.txt`, run `playwright install --with-deps` for browsers
-- **Execution**: Use `pytest` for running tests, support parallel execution with `-n auto`
-- **Reporting**: Generate Allure and HTML reports in `reports/`, capture screenshots/videos on failure
-- **Structure**: Keep tests in `tests/`, pages in `pages/`, utilities in `utils/`, data in `data/`
-- **CI/CD**: Tests run via GitHub Actions on push/PR, matrix for multiple browsers
+- **Dependencies**: Install from `package.json` (`npm ci`), run `npx playwright install --with-deps` for browsers
+- **Execution**: Use `npx playwright test` for running tests, control parallelism via `playwright.config.js` `workers` / `--workers`
+- **Reporting**: Generate Allure (`allure-playwright`) and Playwright HTML reports in `reports/`, capture screenshots/videos on failure
+- **Structure**: Keep tests in `tests/` (`*.spec.js`), pages in `pages/`, config in `config/`, data in `data/`
+- **CI/CD**: Tests run via GitHub Actions on push/PR (`.github/workflows/playwright.yml`), matrix for multiple browsers via `--project`
 
 ---
 
@@ -64,7 +65,7 @@ Each command file in `.claude/commands/` contains the full workflow.
 | `/e2e-workflow` | `.claude/commands/e2e-workflow.md` | Full Jira-to-PR workflow (takes ticket ID as argument) |
 | `/generate-tests` | `.claude/commands/generate-tests.md` | Generate tests from Excel |
 | `/write-page-object` | `.claude/commands/write-page-object.md` | Scaffold page object class |
-| `/run-tests` | `.claude/commands/run-tests.md` | Run pytest suite + Allure |
+| `/run-tests` | `.claude/commands/run-tests.md` | Run Playwright suite + Allure |
 | `/commit-changes` | `.claude/commands/commit-changes.md` | Review staged diff + commit |
 | `/raise-pr` | `.claude/commands/raise-pr.md` | Create GitHub PR |
 | `/review-pr` | `.claude/commands/review-pr.md` | Fetch + review open PR |
@@ -72,7 +73,7 @@ Each command file in `.claude/commands/` contains the full workflow.
 | `/jira-ticket` | `.claude/commands/jira-ticket.md` | Work from Jira ticket |
 | `/project-review` | `.claude/commands/project-review.md` | Full codebase audit |
 | `/debug-test` | `.claude/commands/debug-test.md` | Diagnose + fix failing test |
-| `/self-heal-demo` | `.claude/commands/self-heal-demo.md` | Live 6-stage self-heal demo — breaks + auto-heals task_list_page.py locators |
+| `/self-heal-demo` | `.claude/commands/self-heal-demo.md` | Live 6-stage self-heal demo — breaks + auto-heals task_list_page.js locators |
 
 ---
 
@@ -96,12 +97,11 @@ Three MCP servers are active via `.mcp.json` (loaded automatically — `enableAl
 
 ## Application Under Test
 
-**RevFlow** (`https://revflow-dev.axgsolutions.com/`) — a healthcare accounts-receivable / billing case-management app. Login is via Microsoft Azure AD SSO ("Sign in with Microsoft"), modeled by `pages/login_page.py`. The Task List grid (`/tasks`, `pages/task_list_page.py`) lists resident/payer cases in a custom `arw-grid-table` component.
+**RevFlow** (`https://revflow-dev.axgsolutions.com/`) — a healthcare accounts-receivable / billing case-management app. Login is via Microsoft Azure AD SSO ("Sign in with Microsoft"), modeled by `pages/login_page.js`. The Task List grid (`/tasks`, `pages/task_list_page.js`) lists resident/payer cases in a custom `arw-grid-table` component.
 
 ## Context hints for Claude
 
-- The main page hierarchy: `BasePage` ← all page classes (`LoginPage`, `TaskListPage`, …)
-- Test sessions do NOT open new browsers per-test; see `tests/conftest.py` scope=`module`
-- Root `conftest.py` handles screenshot capture on failure and Allure cleanup
-- `config/settings.py` reads `.env` — prefer `settings.*` in tests (`settings.BASE_URL`, `settings.AUTH_USERNAME`, `settings.AUTH_PASSWORD`)
-- Generated reports at: `reports/html/`, `reports/allure-results/`, `reports/videos/`
+- The main page hierarchy: `BasePage` ← all page classes (`LoginPage`, `CaseDetailPage`, `BillerActivityPage`, `TaskListPage`, …)
+- Playwright Test opens a fresh `page` per test by default (function-scoped); screenshot/video/trace capture on failure is configured centrally in `playwright.config.js`'s `use` block, not per-file
+- `config/settings.js` reads `.env` via `dotenv` — prefer `settings.*` in tests (`settings.BASE_URL`, `settings.AUTH_USERNAME`, `settings.AUTH_PASSWORD`)
+- Generated reports at: `reports/html/`, `reports/allure-results/`, `test-results/` (screenshots/videos/traces)

@@ -13,7 +13,7 @@ The demo targets **real production page objects** — not dummy code. It:
 2. Injects a realistic locator decay (simulating a UI refactor)
 3. Detects the failures automatically
 4. Uses Playwright MCP to inspect the live DOM and discover correct selectors
-5. Patches `pages/task_list_page.py` in place
+5. Patches `pages/task_list_page.js` in place
 6. Re-runs the regression suite to confirm healing
 
 Every stage streams live to the dashboard at http://localhost:5173 with purple self-heal theming.
@@ -60,7 +60,7 @@ python dashboard/utils/client.py event \
   --type locator_diff \
   --stage apply_heal \
   --message "Healed: <selector_name>" \
-  --data '{"file":"pages/task_list_page.py","line":<N>,"selector_name":"<name>","broken":"<broken_selector>","healed":"<healed_selector>"}' \
+  --data '{"file":"pages/task_list_page.js","line":<N>,"selector_name":"<name>","broken":"<broken_selector>","healed":"<healed_selector>"}' \
   2>/dev/null || true
 ```
 
@@ -78,7 +78,7 @@ If the health check fails, stop and tell the user:
 
 Also verify the regression test file and break script exist:
 ```bash
-ls tests/ui/test_task_list_regression.py scripts/break_locators.py
+ls tests/ui/task-list-regression.spec.js scripts/break_locators.py
 ```
 
 If either is missing, stop with a clear error message.
@@ -111,23 +111,22 @@ python dashboard/utils/client.py event --type stage_start --stage baseline_run \
 
 Run the regression suite (no parallelism — keep output readable for demo):
 ```bash
-python -m pytest tests/ui/test_task_list_regression.py -v -p no:xdist \
-  --tb=short 2>&1 | tee /tmp/baseline_run.txt
+npx playwright test tests/ui/task-list-regression.spec.js \
+  --workers=1 --reporter=list 2>&1 | tee /tmp/baseline_run.txt
 BASELINE_EXIT=${PIPESTATUS[0]}
 ```
 
 Parse the summary line:
 ```bash
-PASS_COUNT=$(grep -E "passed" /tmp/baseline_run.txt | tail -1 | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+")
-FAIL_COUNT=$(grep -E "failed" /tmp/baseline_run.txt | tail -1 | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+PASS_COUNT=$(grep -E "^\s*[0-9]+ passed" /tmp/baseline_run.txt | tail -1 | grep -oE "[0-9]+" | head -1)
+FAIL_COUNT=$(grep -E "^\s*[0-9]+ failed" /tmp/baseline_run.txt | tail -1 | grep -oE "[0-9]+" | head -1 || echo "0")
 ```
 
-Emit a log line per test result so the stream shows individual test names:
+Emit a log line per test result so the stream shows individual test names (Playwright's `list` reporter marks passes with `✓` and failures with `✘`):
 ```bash
-grep -E "PASSED|FAILED" /tmp/baseline_run.txt | while IFS= read -r line; do
+grep -E "✓|✘" /tmp/baseline_run.txt | while IFS= read -r line; do
   LEVEL="success"
-  [[ "$line" == *FAILED* ]] && LEVEL="error"
-  TEST_NAME=$(echo "$line" | awk '{print $1}')
+  [[ "$line" == *"✘"* ]] && LEVEL="error"
   python dashboard/utils/client.py event --type log --stage baseline_run \
     --message "$line" --level "$LEVEL" 2>/dev/null || true
 done
@@ -156,7 +155,7 @@ python dashboard/utils/client.py event --type stage_complete --stage baseline_ru
 HITL_OUT=$(python dashboard/utils/hitl_gate.py \
   --id "baseline-confirmed" \
   --message "Baseline confirmed — $PASS_COUNT/2 tests passing. Inject locator decay into task_list_page.py to begin the self-heal cycle?" \
-  --context "{\"passed\":\"$PASS_COUNT\",\"target_file\":\"pages/task_list_page.py\",\"locators_to_break\":\"grid_rows, grid_cells\"}" \
+  --context "{\"passed\":\"$PASS_COUNT\",\"target_file\":\"pages/task_list_page.js\",\"locators_to_break\":\"grid_rows, grid_cells\"}" \
   2>/dev/null || true)
 HITL_EXIT=$?
 ```
@@ -173,7 +172,7 @@ HITL_EXIT=$?
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_start --stage inject_decay \
-  --message "Injecting locator decay into pages/task_list_page.py..." 2>/dev/null || true
+  --message "Injecting locator decay into pages/task_list_page.js..." 2>/dev/null || true
 ```
 
 Run the break script:
@@ -220,22 +219,22 @@ python dashboard/utils/client.py event --type stage_start --stage detect_failure
 ```
 
 ```bash
-python -m pytest tests/ui/test_task_list_regression.py -v -p no:xdist \
-  --tb=short 2>&1 | tee /tmp/detect_run.txt
+npx playwright test tests/ui/task-list-regression.spec.js \
+  --workers=1 --reporter=list 2>&1 | tee /tmp/detect_run.txt
 DETECT_EXIT=${PIPESTATUS[0]}
 ```
 
 Parse results:
 ```bash
-FAIL_COUNT=$(grep -E "failed" /tmp/detect_run.txt | tail -1 | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
-PASS_COUNT=$(grep -E "passed" /tmp/detect_run.txt | tail -1 | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
+FAIL_COUNT=$(grep -E "^\s*[0-9]+ failed" /tmp/detect_run.txt | tail -1 | grep -oE "[0-9]+" | head -1 || echo "0")
+PASS_COUNT=$(grep -E "^\s*[0-9]+ passed" /tmp/detect_run.txt | tail -1 | grep -oE "[0-9]+" | head -1 || echo "0")
 ```
 
 Stream each test result line:
 ```bash
-grep -E "PASSED|FAILED" /tmp/detect_run.txt | while IFS= read -r line; do
+grep -E "✓|✘" /tmp/detect_run.txt | while IFS= read -r line; do
   LEVEL="success"
-  [[ "$line" == *FAILED* ]] && LEVEL="error"
+  [[ "$line" == *"✘"* ]] && LEVEL="error"
   python dashboard/utils/client.py event --type log --stage detect_failure \
     --message "$line" --level "$LEVEL" 2>/dev/null || true
 done
@@ -247,7 +246,7 @@ python dashboard/utils/client.py event --type stage_error --stage detect_failure
   --message "Expected failures but all tests passed — decay may not have been applied correctly." \
   --level error 2>/dev/null || true
 ```
-Stop demo and advise user to check `pages/task_list_page.py` manually.
+Stop demo and advise user to check `pages/task_list_page.js` manually.
 
 **If failures detected as expected**:
 ```bash
@@ -349,12 +348,12 @@ python dashboard/utils/client.py event --type stage_complete --stage inspect_dom
 
 ## Stage 5 — Apply Heal (`apply_heal`)
 
-**Goal**: Patch `pages/task_list_page.py` with the correct selectors discovered in Stage 4. Emit a `locator_diff` event for each fix so the dashboard renders the animated purple diff block.
+**Goal**: Patch `pages/task_list_page.js` with the correct selectors discovered in Stage 4. Emit a `locator_diff` event for each fix so the dashboard renders the animated purple diff block.
 
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_start --stage apply_heal \
-  --message "Patching pages/task_list_page.py with healed selectors..." 2>/dev/null || true
+  --message "Patching pages/task_list_page.js with healed selectors..." 2>/dev/null || true
 ```
 
 **Read the current state of `task_list_page.py`** (use the Read tool, not bash cat).
@@ -374,7 +373,7 @@ python dashboard/utils/client.py event \
   --type locator_diff \
   --stage apply_heal \
   --message "Healed: grid_rows" \
-  --data "{\"file\":\"pages/task_list_page.py\",\"line\":$LINE_NUM,\"selector_name\":\"grid_rows\",\"broken\":\".arw-broken-grid-table__row\",\"healed\":\"$CORRECT_ROW_SELECTOR\"}" \
+  --data "{\"file\":\"pages/task_list_page.js\",\"line\":$LINE_NUM,\"selector_name\":\"grid_rows\",\"broken\":\".arw-broken-grid-table__row\",\"healed\":\"$CORRECT_ROW_SELECTOR\"}" \
   2>/dev/null || true
 ```
 
@@ -394,7 +393,7 @@ python dashboard/utils/client.py event \
   --type locator_diff \
   --stage apply_heal \
   --message "Healed: grid_cells" \
-  --data "{\"file\":\"pages/task_list_page.py\",\"line\":$LINE_NUM_2,\"selector_name\":\"grid_cells\",\"broken\":\".arw-broken-grid-table__cell\",\"healed\":\"$CORRECT_CELL_SELECTOR\"}" \
+  --data "{\"file\":\"pages/task_list_page.js\",\"line\":$LINE_NUM_2,\"selector_name\":\"grid_cells\",\"broken\":\".arw-broken-grid-table__cell\",\"healed\":\"$CORRECT_CELL_SELECTOR\"}" \
   2>/dev/null || true
 ```
 
@@ -405,9 +404,9 @@ python dashboard/utils/client.py event --type log --stage apply_heal \
 
 ```bash
 python dashboard/utils/client.py event --type stage_complete --stage apply_heal \
-  --message "2 locators healed in pages/task_list_page.py" \
+  --message "2 locators healed in pages/task_list_page.js" \
   --level success \
-  --data '{"healed_count":2,"file":"pages/task_list_page.py"}' \
+  --data '{"healed_count":2,"file":"pages/task_list_page.js"}' \
   2>/dev/null || true
 ```
 
@@ -424,22 +423,22 @@ python dashboard/utils/client.py event --type stage_start --stage verify_heal \
 ```
 
 ```bash
-python -m pytest tests/ui/test_task_list_regression.py -v -p no:xdist \
-  --tb=short 2>&1 | tee /tmp/verify_run.txt
+npx playwright test tests/ui/task-list-regression.spec.js \
+  --workers=1 --reporter=list 2>&1 | tee /tmp/verify_run.txt
 VERIFY_EXIT=${PIPESTATUS[0]}
 ```
 
 Parse results:
 ```bash
-VERIFY_PASS=$(grep -E "passed" /tmp/verify_run.txt | tail -1 | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
-VERIFY_FAIL=$(grep -E "failed" /tmp/verify_run.txt | tail -1 | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+VERIFY_PASS=$(grep -E "^\s*[0-9]+ passed" /tmp/verify_run.txt | tail -1 | grep -oE "[0-9]+" | head -1 || echo "0")
+VERIFY_FAIL=$(grep -E "^\s*[0-9]+ failed" /tmp/verify_run.txt | tail -1 | grep -oE "[0-9]+" | head -1 || echo "0")
 ```
 
 Stream each test result:
 ```bash
-grep -E "PASSED|FAILED" /tmp/verify_run.txt | while IFS= read -r line; do
+grep -E "✓|✘" /tmp/verify_run.txt | while IFS= read -r line; do
   LEVEL="success"
-  [[ "$line" == *FAILED* ]] && LEVEL="error"
+  [[ "$line" == *"✘"* ]] && LEVEL="error"
   python dashboard/utils/client.py event --type log --stage verify_heal \
     --message "$line" --level "$LEVEL" 2>/dev/null || true
 done
@@ -473,7 +472,7 @@ cat > "$SUMMARY_PATH" << EOF
 # Self-Heal Summary
 
 **Date**: $(date '+%Y-%m-%d %H:%M:%S')
-**Target file**: pages/task_list_page.py
+**Target file**: pages/task_list_page.js
 **Locators healed**: 2 (grid_rows, grid_cells)
 **Regression tests**: $VERIFY_PASS/2 passing
 **DOM inspection**: Live revflow-dev.axgsolutions.com
@@ -509,7 +508,7 @@ python dashboard/utils/client.py event \
 
 Tell the user:
 > **Self-heal demo complete.**
-> - 2 locators in `pages/task_list_page.py` were broken and healed automatically
+> - 2 locators in `pages/task_list_page.js` were broken and healed automatically
 > - All 2 regression tests are passing
 > - Heal summary saved to `$SUMMARY_PATH`
 > - Dashboard at http://localhost:5173 shows the full cycle with locator diffs

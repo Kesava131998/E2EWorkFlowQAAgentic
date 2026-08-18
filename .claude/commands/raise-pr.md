@@ -49,11 +49,11 @@ git push -u origin <current-branch>
 
 | Category | Files |
 |----------|-------|
-| 📄 Page Objects | `pages/*.py` |
-| 🧪 Tests | `tests/*.py` |
-| ⚙️ Config / Utils | `utils/`, `config/`, `conftest.py` |
+| 📄 Page Objects | `pages/*.js` |
+| 🧪 Tests | `tests/*.spec.js` |
+| ⚙️ Config / Utils | `utils/`, `config/`, `playwright.config.js` |
 | 📚 Skills / Docs | `agents/`, `.claude/` |
-| 🔧 Setup | `requirements.txt`, `pytest.ini`, `run_tests.py` |
+| 🔧 Setup | `package.json`, `playwright.config.js` |
 
 ### Step 4 — Build PR title
 
@@ -80,37 +80,36 @@ docs(agents): streamline Claude skills and MCP configuration
 ## Changes
 
 ### 📄 Page Objects
-- `pages/X_page.py` — Added `method_name()` for Y interaction
+- `pages/x_page.js` — Added `methodName()` for Y interaction
 
 ### 🧪 Tests
-- `tests/test_X.py` — Covers scenario A with B parametrize variants
+- `tests/x.spec.js` — Covers scenario A with B data-driven variants
 
 ### ⚙️ Config / Utils
-- `config/settings.py` — Added `NEW_TIMEOUT`
+- `config/settings.js` — Added `NEW_TIMEOUT`
 
 ## Test Coverage
 
 | Test File | Scenarios Covered | Status |
 |-----------|-------------------|--------|
-| `test_diagnostics.py` | CCM Software Version, CCM Time Verification | ✅ Passing |
-| `test_reboot.py` | CCM Reboot, MM Reboot | ✅ Passing |
+| `arw2579-payment-schedule.spec.js` | Modal open/close, payer eligibility, schedule save | ✅ Passing |
 
 ## How to test
 
 ```bash
-pytest tests/<changed-file>.py -v
-allure serve reports/allure-results
+npx playwright test tests/<changed-file>.spec.js
+npx allure serve reports/allure-results
 ```
 
 ## Checklist
 
-- [ ] All new page classes inherit `BasePage`
-- [ ] All page methods have `@allure.step(...)` decorator
+- [ ] All new page classes extend `BasePage`
+- [ ] All page action methods wrapped in `test.step(...)`
 - [ ] No hardcoded credentials or URLs
 - [ ] No raw integer timeouts (uses `settings.*_TIMEOUT`)
-- [ ] No debug `print()` statements
-- [ ] Tests collected without error (`pytest --collect-only`)
-- [ ] Test function names follow `test_pos_` / `test_err_` / `test_perm_` convention
+- [ ] No debug `console.log()` statements left in
+- [ ] Tests collected without error (`npx playwright test --list`)
+- [ ] Test titles follow `'pos: ...'` / `'err: ...'` / `'perm: ...'` convention
 - [ ] Allure report generated and verified locally
 
 ## Related
