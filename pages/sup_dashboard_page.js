@@ -317,6 +317,19 @@ class SupDashboardPage extends BasePage {
       return this.tooltip.innerText();
     });
   }
+
+  async isArStatusFilterTooltipVisible() {
+    return test.step('Verify the AR Status widget filter tooltip is visible', async () => {
+      return this.tooltip.isVisible();
+    });
+  }
+
+  async hoverArStatusWidget() {
+    await test.step('Hover over the AR Status widget header area', async () => {
+      await expect(this.arStatusWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.arStatusWidget.hover();
+    });
+  }
 }
 
 module.exports = { SupDashboardPage };
