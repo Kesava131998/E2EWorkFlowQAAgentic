@@ -21,7 +21,7 @@ Jira    : https://vwiki281-1785763863770.atlassian.net/browse/ARW-2
 | Branch Created | ✅ | arw-2-dashboard-add-payer-category-filter |
 | Commit + Push | ✅ | 6450b17 |
 | PR Raised | ✅ | https://github.com/manohar10173/Revflow-e2e-workflow/pull/19 (draft: yes) |
-| PR Review | ⏳ | pending — review agent to run next |
+| PR Review | ⚠️ | REQUEST_CHANGES (posted as COMMENT — self-review restriction). Blocking: branch diverges from current `main`'s `pages/sup_dashboard_page.js` (cut from stale base `589a523`, main is at `c6eff1d`) — rebase needed before merge. Review: https://github.com/manohar10173/Revflow-e2e-workflow/pull/19#pullrequestreview-4971490582 |
 
 ## Bug Fixed During Execution
 `pos: open payer category filter dropdown` failed intermittently because `waitForDashboardLoad()`
