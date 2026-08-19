@@ -87,10 +87,10 @@ def main():
 
     if args.cmd == "check":
         if check_server():
-            print("✓ Dashboard server is running at", DASHBOARD_URL)
+            print("[OK] Dashboard server is running at", DASHBOARD_URL)
             raise SystemExit(0)
         else:
-            print("✗ Dashboard server is NOT running at", DASHBOARD_URL)
+            print("[FAIL] Dashboard server is NOT running at", DASHBOARD_URL)
             print("  Start it first:  cd dashboard && ./start.sh")
             raise SystemExit(1)
 

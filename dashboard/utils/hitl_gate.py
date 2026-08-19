@@ -73,7 +73,7 @@ def main():
     ]
     context = json.loads(args.context)
 
-    print(f"\n⏸  HITL CHECKPOINT: {args.id}", file=sys.stderr)
+    print(f"\n[HITL CHECKPOINT] {args.id}", file=sys.stderr)
     print(f"   {args.message}", file=sys.stderr)
     print(f"   Waiting for response at http://localhost:5173 ...\n", file=sys.stderr)
 
