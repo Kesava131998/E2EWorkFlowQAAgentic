@@ -62,14 +62,29 @@ If the failure matches a known issue already tracked in Jira:
 
 ### Step 2 — Classify the error type
 
-| Error Pattern | Category | Likely Cause |
-|--------------|----------|-------------|
-| `TimeoutError: locator.click: Timeout ... waiting for locator` | **Stale Locator** | Element changed, page slower, wrong locator |
-| `TimeoutError: page.waitForLoadState: Timeout` | **Slow Page** | Network slow, `networkidle` too strict |
-| `page.<x> is not a function` / `Cannot read properties of undefined` | **Wrong fixture/argument** | Page object constructed with wrong object, or method typo |
-| `expect(received).toBe(expected)` failure | **Assertion Mismatch** | Text/state changed in UI |
-| `Cannot find module '../pages/...'` | **Import Error** | File renamed, typo in `require(...)` path |
-| `Target page, context or browser has been closed` | **Browser/context closed early** | Stray `page.close()`, unawaited navigation, or test finished before an async step resolved |
+**First, sort every failure into one of two buckets — this classification is load-bearing: `/e2e-workflow` Stage 4c only files a Jira Bug for `app_defect`, never for `script_issue`.**
+
+| Bucket | Meaning | Action |
+|--------|---------|--------|
+| `script_issue` | The automation is wrong — locator, timeout, fixture usage, wait strategy, or an assertion that no longer matches an *intentional* UI change | Fix the script (Steps 3a–3d below), rerun, no Jira Bug |
+| `app_defect` | The automation is correct and faithfully exercises the AC, but the application itself behaves incorrectly (wrong calculation, wrong status code, wrong data returned, business rule violated, error where success expected or vice versa) | Do **not** edit the script to "make it pass" — leave the test failing/red as accurate signal, report as `app_defect` so it gets filed as a Jira Bug |
+
+| Error Pattern | Category | Bucket | Likely Cause |
+|--------------|----------|--------|-------------|
+| `TimeoutError: locator.click: Timeout ... waiting for locator` | **Stale Locator** | `script_issue` | Element changed, page slower, wrong locator |
+| `TimeoutError: page.waitForLoadState: Timeout` | **Slow Page** | `script_issue` | Network slow, `networkidle` too strict |
+| `page.<x> is not a function` / `Cannot read properties of undefined` | **Wrong fixture/argument** | `script_issue` | Page object constructed with wrong object, or method typo |
+| `Cannot find module '../pages/...'` | **Import Error** | `script_issue` | File renamed, typo in `require(...)` path |
+| `Target page, context or browser has been closed` | **Browser/context closed early** | `script_issue` | Stray `page.close()`, unawaited navigation, or test finished before an async step resolved |
+| `expect(received).toBe(expected)` failure | **Assertion Mismatch** | `script_issue` **or** `app_defect` — inspect before deciding | If the *actual* UI/API value is a legitimate, intentional behavior the assertion hasn't caught up to → `script_issue` (update the expected value). If the actual value contradicts the ticket's AC / business rule (e.g. a total that doesn't sum, a status code that shouldn't occur, a filter that doesn't filter) → `app_defect` (leave assertion as-is, it's correctly catching a real bug) |
+
+Report each failing test's bucket explicitly back to the caller, e.g.:
+```
+tests/scrum65-biller_activity.spec.js › 'pos: verify overdue task count' → app_defect
+  Reason: UI shows overdueOpenBalanceTaskCount=3 but sum of underlying grid rows=5 — calculation bug, not a locator/assertion issue
+tests/scrum65-biller_activity.spec.js › 'err: invalid filter shows message' → script_issue
+  Reason: stale locator for the error toast, fixed in pages/biller_activity_page.js
+```
 
 ### Step 3a — Stale Locator Fix
 

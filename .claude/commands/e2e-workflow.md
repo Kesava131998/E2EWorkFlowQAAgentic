@@ -707,8 +707,11 @@ HITL_OUT=$(python dashboard/utils/hitl_gate.py \
   --context "{\"failed\":\"<N>\",\"failures\":\"<list>\"}" 2>/dev/null)
 HITL_EXIT=$?
 ```
-- **Exit 1 (Fix Failures First)** → invoke `debug-test` skill per failing test, then re-run Stage 4 (note: `$QA_EXEC_KEY` was already marked Done after the first run and does not need to be re-transitioned)
-- **Exit 0 (Continue as Draft)** → proceed to Stage 4c
+- **Exit 1 (Fix Failures First)** → invoke `debug-test` skill per failing test. `debug-test` classifies each failure as `script_issue` or `app_defect` (see its Step 2):
+  - `script_issue` → `debug-test` fixes the script; after all script_issue tests are fixed, re-run Stage 4 for those tests (note: `$QA_EXEC_KEY` was already marked Done after the first run and does not need to be re-transitioned)
+  - `app_defect` → do **not** edit the test/page object to force a pass. Leave it failing and carry it straight into Stage 4c for a Jira Bug — re-running it will only reproduce the same real defect.
+  - Store the per-test bucket as `$FAILURE_CLASSIFICATION` (map of test name → `script_issue`/`app_defect`) for Stage 4c to consume.
+- **Exit 0 (Continue as Draft)** → proceed to Stage 4c. If this path is taken without running `debug-test`, classify remaining failures as `app_defect` by default only if you have actually inspected the failure and confirmed the app misbehaves — otherwise ask the user in chat which bucket applies before Stage 4c runs, since an unclassified failure must never be auto-filed as a bug.
 - If the dashboard is unreachable, ask this in chat instead and wait for a real reply — do not silently default to "Continue" on a failure gate.
 
 ---
@@ -717,25 +720,63 @@ HITL_EXIT=$?
 
 **Skip this stage entirely if all tests passed, or if `$SKIP_RUN = true`.**
 
-```bash
-# 📊 Dashboard
-python dashboard/utils/client.py event --type stage_start --stage jira_defects --message "Logging failures as a Jira defect..." 2>/dev/null || true
+**This stage only ever files a Bug for `app_defect`-classified failures — never for `script_issue`.** A failing test caused by a stale locator, bad timeout, or an assertion that just hasn't caught up to an intentional UI change is an automation problem, not a product defect, and must not be raised against the app team. Use `$FAILURE_CLASSIFICATION` from Checkpoint 2 to split the failing tests:
+
+```
+$APP_DEFECT_TESTS   = failing tests where $FAILURE_CLASSIFICATION[test] == "app_defect"
+$SCRIPT_ISSUE_TESTS = failing tests where $FAILURE_CLASSIFICATION[test] == "script_issue" (still failing despite a fix attempt, or fix deferred)
 ```
 
-Create **one combined Jira Bug** covering every test that is still failing after retries (and after any fix attempt from Checkpoint 2) — never one issue per failing test.
+If `$APP_DEFECT_TESTS` is empty, skip the `jira_create_issue` call entirely — there is no product bug to report. Still note `$SCRIPT_ISSUE_TESTS` in the run summary (Final Status Summary) as "automation issue — needs script fix, not filed as a bug" so they aren't lost, but do not create a Jira issue for them.
+
+```bash
+# 📊 Dashboard
+python dashboard/utils/client.py event --type stage_start --stage jira_defects --message "Logging app-side failures as a Jira defect..." 2>/dev/null || true
+```
+
+If `$APP_DEFECT_TESTS` is non-empty, create **one combined Jira Bug** covering every test in `$APP_DEFECT_TESTS` only — never one issue per failing test, and never include `$SCRIPT_ISSUE_TESTS` in it.
+
+For each test in `$APP_DEFECT_TESTS`, derive from the test case/AC and the actual observed failure:
+- **Description** — one line on what the test was verifying and why it matters (tie back to the AC)
+- **Steps to Reproduce** — the concrete numbered UI/API steps (reuse the steps from the approved manual test case in Stage 2, not the raw Playwright call stack)
+- **Expected Result** — what the AC/test assertion required
+- **Actual Result** — what the app actually did (from the failure message/response), including the mismatched value
 
 ```
 jira_create_issue(
   parent=$TICKET,
   issue_type="Bug",
-  summary="[$TICKET] <N> automation test(s) failing — $TICKET_SUMMARY",
+  summary="[$TICKET] <N> application defect(s) found — $TICKET_SUMMARY",
   description="""
   Story: $TICKET ($TICKET_SUMMARY)
   Branch/run: $BRANCH (or 'pending' if not yet created)
 
-  Failed tests:
-  - <test_name_1>: <error summary>
-  - <test_name_2>: <error summary>
+  --- Defect 1: <test_name_1> ---
+  Description:
+  <what this test verifies and which AC it maps to>
+
+  Steps to Reproduce:
+  1. <step>
+  2. <step>
+  3. <step>
+
+  Expected Result:
+  <what the AC/assertion required>
+
+  Actual Result:
+  <what the app actually returned/displayed, with the specific mismatched value>
+
+  --- Defect 2: <test_name_2> ---
+  Description:
+  ...
+
+  Steps to Reproduce:
+  ...
+
+  Expected Result:
+  ...
+
+  Actual Result:
   ...
 
   Screenshots: $FAILURE_SCREENSHOTS
@@ -744,19 +785,21 @@ jira_create_issue(
 )
 ```
 
+Each defect block within the combined Bug must always carry its own Description / Steps to Reproduce / Expected Result / Actual Result — do not collapse multiple app_defect tests into a single generic paragraph.
+
 Capture the returned key as `$DEFECT_KEY`. Link it to the parent story:
 ```
 jira_update_issue(issue_key=$TICKET, link={"type": "relates to", "issue": $DEFECT_KEY})
 ```
 If a dedicated link call isn't available, note the relation in the Bug description instead (already included above) and proceed — this stage never blocks the workflow on a linking failure.
 
-Confirm: `"🐞 $DEFECT_KEY created — <N> failing test(s) logged against $TICKET"`
+Confirm: `"🐞 $DEFECT_KEY created — <N> application defect(s) logged against $TICKET (<M> script-issue failure(s) fixed/tracked separately, not filed)"`
 
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_complete --stage jira_defects --level success \
-  --message "$DEFECT_KEY created for <N> failing test(s)" \
-  --data "{\"defect_key\":\"$DEFECT_KEY\",\"failed_count\":\"<N>\"}" 2>/dev/null || true
+  --message "$DEFECT_KEY created for <N> app defect(s); <M> script-issue failure(s) not filed" \
+  --data "{\"defect_key\":\"$DEFECT_KEY\",\"app_defect_count\":\"<N>\",\"script_issue_count\":\"<M>\"}" 2>/dev/null || true
 ```
 
 ---
@@ -1097,7 +1140,8 @@ Confirm to the user: `"📄 Run summary saved to plans/run_summary_$TICKET_lower
 | QA subtasks already exist | Reuse their keys as `$QA_DESIGN_KEY`/`$QA_EXEC_KEY` (matched by summary pattern, not count) — never create duplicates, never let unrelated subtasks affect this |
 | `"Done"` transition unavailable for a subtask | Fetch available transitions, match by name, retry with `transition_id` |
 | Page object missing for `$MODULE` | Run `write-page-object` skill first, then resume from Stage 3 |
-| Tests still failing after fix attempt | Raise as draft, note failures in PR body and Jira comment; `$QA_EXEC_KEY` still marked Done (execution occurred) |
+| Tests still failing after fix attempt | Raise PR as draft regardless. Only file a Jira Bug (Stage 4c) for failures classified `app_defect`; failures still classified `script_issue` are noted in the run summary as automation debt, never filed as a Bug. `$QA_EXEC_KEY` still marked Done either way (execution occurred) |
+| A failure's bucket (`script_issue` vs `app_defect`) is ambiguous | Don't guess — ask the user in chat to confirm before Stage 4c runs. An unclassified failure must never be auto-filed as a Bug |
 | GitHub MCP not authenticated | Stop — prompt user to check `.mcp.json` |
 | Any outcome at Stage 8 | Never post a Jira comment — report results in chat and in `plans/run_summary_*.md` only |
 | CSV attach to `$QA_DESIGN_KEY` fails | Report the failure to the user, continue the workflow anyway (does not block the "Done" transition or any later stage) |
