@@ -1,0 +1,92 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+1,AC1,Happy Path,High,User opens the Payer Category filter dropdown from the Dashboard,"User logged in as a valid RevFlow user; navigate to the Dashboard page; Dashboard fully loaded (no spinner)",None,"1. Navigate to the Dashboard page
+2. Verify the page has loaded (loading spinner not visible)
+3. Verify the Payer Category filter control is visible
+4. Click the Payer Category filter control
+5. Verify the Payer Category dropdown panel is visible","1. Dashboard page loads
+2. Spinner is not present
+3. Payer Category filter control is visible and enabled
+4. Filter control is clicked
+5. Payer Category dropdown panel opens and is visible"
+2,AC1,Negative,Medium,Clicking outside the open Payer Category dropdown closes it without applying changes,Payer Category dropdown is open,None,"1. Open the Payer Category filter dropdown
+2. Verify the dropdown panel is visible
+3. Click outside the dropdown panel (e.g. on the Dashboard body)
+4. Verify the dropdown panel is no longer visible","1. Dropdown opens
+2. Dropdown panel is visible
+3. Outside area is clicked
+4. Dropdown panel closes and no filter is applied"
+3,AC2,Happy Path,High,User searches for ""HMO"" in the Payer Category search field and sees the matching result,Payer Category dropdown is open,"Search text = ""HMO""","1. Open the Payer Category filter dropdown
+2. Verify the search box field is visible
+3. Click the search box field
+4. Type ""HMO"" into the search box field
+5. Verify the list of Payer Category options is visible
+6. Verify the ""HMO"" option is visible in the filtered list","1. Dropdown opens
+2. Search box field is visible
+3. Search box field is focused
+4. ""HMO"" is entered in the search box field
+5. Options list updates and is visible
+6. ""HMO"" option is displayed as a matching result"
+4,AC2,Negative,Medium,Searching for a non-existent Payer Category shows no matching results,Payer Category dropdown is open,"Search text = ""ZZZNONEXISTENT""","1. Open the Payer Category filter dropdown
+2. Click the search box field
+3. Type ""ZZZNONEXISTENT"" into the search box field
+4. Verify the Payer Category options list is visible
+5. Verify no matching options are displayed","1. Dropdown opens
+2. Search box field is focused
+3. ""ZZZNONEXISTENT"" is entered
+4. Options list is visible
+5. No Payer Category options match; an empty/no-results state is shown"
+5,AC2,Edge Case,Low,Clearing the search field after searching restores the full Payer Category list,"Payer Category dropdown is open; ""HMO"" has been searched","Search text = ""HMO"", then cleared","1. Open the Payer Category filter dropdown
+2. Type ""HMO"" into the search box field
+3. Verify the filtered list shows only ""HMO""
+4. Clear the search box field
+5. Verify the full Payer Category options list is visible again","1. Dropdown opens
+2. ""HMO"" is entered
+3. Only ""HMO"" is shown in the list
+4. Search box field is cleared
+5. All Payer Category options are displayed again"
+6,AC3,Happy Path,High,User selects ""HMO"" and clicks Apply to filter the Dashboard data,"Payer Category dropdown is open; ""HMO"" is visible in the options list",Payer Category = HMO,"1. Open the Payer Category filter dropdown
+2. Search for ""HMO""
+3. Verify the ""HMO"" checkbox option is visible
+4. Click the ""HMO"" checkbox to select it
+5. Verify the Apply button is visible and enabled
+6. Click the Apply button
+7. Verify the Dashboard data reloads","1. Dropdown opens
+2. ""HMO"" appears in the filtered list
+3. ""HMO"" checkbox is visible
+4. ""HMO"" checkbox becomes checked
+5. Apply button is visible and enabled
+6. Apply button is clicked
+7. Dashboard widgets refresh and display data filtered to the HMO payer category"
+7,AC3,Negative,Medium,Clicking Apply with no Payer Category selected does not change the Dashboard filter,Payer Category dropdown is open; no category selected,None selected,"1. Open the Payer Category filter dropdown
+2. Verify no Payer Category checkbox is checked
+3. Verify the Apply button state
+4. Click the Apply button (if enabled)
+5. Verify the Dashboard data is unchanged","1. Dropdown opens
+2. No checkboxes are checked
+3. Apply button is disabled, or has no effect if enabled
+4. Apply is clicked (if possible)
+5. Dashboard data remains unfiltered/unchanged"
+8,AC3,Edge Case,Medium,Selecting multiple Payer Categories and applying filters the Dashboard by all selected categories,Payer Category dropdown is open; at least two categories available,"Payer Categories = HMO, PPO","1. Open the Payer Category filter dropdown
+2. Select the ""HMO"" checkbox
+3. Select the ""PPO"" checkbox
+4. Click the Apply button
+5. Verify the Dashboard data reloads","1. Dropdown opens
+2. ""HMO"" checkbox is checked
+3. ""PPO"" checkbox is checked
+4. Apply button is clicked
+5. Dashboard widgets display data filtered to both HMO and PPO payer categories"
+9,AC4,Happy Path,High,"After applying the HMO filter, ""HMO"" is displayed as the selected value in the Payer Category filter",Payer Category filter has been applied with ""HMO"" selected,Payer Category = HMO,"1. Apply the Payer Category filter with ""HMO"" selected
+2. Verify the Payer Category filter control is visible
+3. Verify the applied value displayed on the filter control","1. Filter is applied
+2. Filter control is visible
+3. Filter control displays ""HMO"" as the selected/applied value"
+10,AC4,Edge Case,Medium,"The applied ""HMO"" filter value persists after reopening the Payer Category dropdown","""HMO"" filter has been applied",Payer Category = HMO,"1. Apply the Payer Category filter with ""HMO"" selected
+2. Click the Payer Category filter control to reopen the dropdown
+3. Verify the ""HMO"" checkbox is still shown as checked","1. Filter is applied
+2. Dropdown reopens
+3. ""HMO"" checkbox remains checked, reflecting the currently applied filter"
+11,AC1,RBAC,High,Payer Category filter is accessible only to an authenticated Dashboard user,No active session (not logged in),None,"1. Attempt to navigate directly to the Dashboard page URL without logging in
+2. Verify the user is redirected to the login page
+3. Verify the Payer Category filter is not accessible","1. Navigation is attempted
+2. User is redirected to the Microsoft Azure AD SSO login page
+3. Payer Category filter and Dashboard content are not visible without authentication"

@@ -1,4 +1,6 @@
+const { test, expect } = require('@playwright/test');
 const { BasePage } = require('./base_page');
+const { settings } = require('../config/settings');
 
 /**
  * Page object for the Supervisor Dashboard page (converted from dashborad.js /
@@ -174,6 +176,110 @@ class SupDashboardPage extends BasePage {
     this.balanceStatusOptions = page.locator(
       "//div[contains(@class,'flex') and contains(@class,'justify-center') and contains(@class,'ng-star-inserted')]//button"
     );
+  }
+
+  // ── Payer Category filter actions ─────────────────────────────────────
+
+  async openPayerCategoryFilter() {
+    await test.step('Click Payer Category filter to open dropdown', async () => {
+      await expect(this.payerCategoriesDropDown).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.payerCategoriesDropDown.click();
+    });
+  }
+
+  async isPayerCategorySearchFieldVisible() {
+    return test.step('Verify Payer Category search field is visible', async () => {
+      return this.searchBoxField.isVisible();
+    });
+  }
+
+  async searchPayerCategory(categoryName) {
+    await test.step(`Search for "${categoryName}" in Payer Category search field`, async () => {
+      await expect(this.searchBoxField).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.searchBoxField.fill(categoryName);
+    });
+  }
+
+  async clearPayerCategorySearch() {
+    await test.step('Clear the Payer Category search field', async () => {
+      await this.searchBoxField.fill('');
+    });
+  }
+
+  async getPayerCategoryOptionsCount() {
+    return test.step('Count visible Payer Category options', async () => {
+      return this.payerCategoriesDropDownOptions.count();
+    });
+  }
+
+  async isPayerCategoryOptionVisible(categoryName) {
+    return test.step(`Verify Payer Category option "${categoryName}" is visible`, async () => {
+      return this.payerCategoriesDropDownOptions.filter({ hasText: categoryName }).first().isVisible();
+    });
+  }
+
+  async selectPayerCategory(categoryName) {
+    await test.step(`Select Payer Category checkbox for "${categoryName}"`, async () => {
+      const checkbox = this.payerCategoryCheckboxes.filter({ hasText: categoryName }).first();
+      await expect(checkbox).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await checkbox.click();
+    });
+  }
+
+  async isPayerCategorySelected(categoryName) {
+    return test.step(`Verify Payer Category "${categoryName}" checkbox is checked`, async () => {
+      const checkbox = this.payerCategoryCheckboxes.filter({ hasText: categoryName }).first();
+      return checkbox.locator('input.mdc-checkbox__native-control').isChecked();
+    });
+  }
+
+  async isApplyButtonEnabled() {
+    return test.step('Verify Apply button enabled state', async () => {
+      return this.applyBtn.isEnabled();
+    });
+  }
+
+  async clickApplyPayerCategoryFilter() {
+    await test.step('Click Apply to submit Payer Category filter', async () => {
+      await this.applyBtn.click();
+    });
+  }
+
+  async getAppliedPayerCategoryFilterValue() {
+    return test.step('Read the applied Payer Category filter value', async () => {
+      return this.payerCategoriesDropDown.innerText();
+    });
+  }
+
+  async navigateToDashboard() {
+    await test.step('Navigate to the Dashboard page', async () => {
+      await this.navigateTo(`${settings.BASE_URL}/dashboard`);
+    });
+  }
+
+  async waitForDashboardLoad() {
+    await test.step('Wait for Dashboard to finish loading', async () => {
+      await expect(this.dashboardPage).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.loadSpinner.first().waitFor({ state: 'hidden', timeout: settings.PAGE_LOAD_TIMEOUT });
+    });
+  }
+
+  async isPayerCategoryFilterVisible() {
+    return test.step('Verify Payer Category filter control is visible', async () => {
+      return this.payerCategoriesDropDown.isVisible();
+    });
+  }
+
+  async isPayerCategoryDropdownOpen() {
+    return test.step('Verify Payer Category dropdown panel is visible', async () => {
+      return this.payerCategoriesDropDownOptions.first().isVisible();
+    });
+  }
+
+  async closePayerCategoryDropdownByClickingOutside() {
+    await test.step('Click outside the Payer Category dropdown to close it', async () => {
+      await this.dashboardPage.click({ position: { x: 0, y: 0 } });
+    });
   }
 }
 
