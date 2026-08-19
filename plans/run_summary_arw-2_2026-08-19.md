@@ -2,7 +2,7 @@
 Date    : 2026-08-19
 Repo    : manohar10173/Revflow-e2e-workflow
 Branch  : arw-2-dashboard-add-payer-category-filter
-PR      : (pending — see chat for link once raised)
+PR      : https://github.com/manohar10173/Revflow-e2e-workflow/pull/19 (draft)
 Jira    : https://vwiki281-1785763863770.atlassian.net/browse/ARW-2
 
 ## Stage Results
@@ -19,9 +19,9 @@ Jira    : https://vwiki281-1785763863770.atlassian.net/browse/ARW-2
 | Jira Defect Created | ⏭️ | Skipped — no tests failing after fix |
 | Postman Export | ⏭️ | Skipped — user declined API test generation (UI-only ticket) |
 | Branch Created | ✅ | arw-2-dashboard-add-payer-category-filter |
-| Commit + Push | ✅ | (see chat for commit hash) |
-| PR Raised | ✅ | (see chat for PR URL, draft: yes) |
-| PR Review | ✅ | (see chat for verdict) |
+| Commit + Push | ✅ | 6450b17 |
+| PR Raised | ✅ | https://github.com/manohar10173/Revflow-e2e-workflow/pull/19 (draft: yes) |
+| PR Review | ⏳ | pending — review agent to run next |
 
 ## Bug Fixed During Execution
 `pos: open payer category filter dropdown` failed intermittently because `waitForDashboardLoad()`
