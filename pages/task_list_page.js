@@ -295,7 +295,8 @@ class TaskListPage extends BasePage {
     this.overdueTasksSpinner = page.locator("//arw-overdue-tasks-widget//mat-spinner");
 
     // ── Column chooser ────────────────────────────────────────────────────
-    this.columnsFilter = page.locator("//span[normalize-space(text())='Columns']");
+    // Button label now includes a live column count (e.g. "Columns (13)"), so match by role + partial text.
+    this.columnsFilter = page.getByRole('button', { name: /Columns/ });
     this.clearButton = page.locator("//button[normalize-space(text())='Clear']");
     this.columnFiltersDropList = page.locator(
       "//div[@class='ng-scroll-content']/div[contains(@class,'cdk-drop-list')]/div"
@@ -447,6 +448,12 @@ class TaskListPage extends BasePage {
     this.assignedUserName = page.locator(
       "//arw-task-details//arw-select[@formcontrolname='assigneeId']//span[contains(@class,'grow overflow-ellipsis')]"
     );
+
+    // ── Last Updated On / Last Updated By columns (SCRUM-26) ──────────────
+    this.columnChooserCheckboxByLabel = (columnName) =>
+      page.locator(
+        `//arw-grid-columns-toolbar-dropdown//div[normalize-space()='${columnName}']/preceding-sibling::input[@type='checkbox']`
+      );
   }
 
   // ── getLocators — rebuild the shared selector map against another page/tab (popup, new tab) ──
@@ -924,6 +931,72 @@ class TaskListPage extends BasePage {
   async clickOnDueDateOptions(txt) {
     await test.step('Select due date option from the dropdown', async () => {
       await this.dueDateOptions(txt).click();
+    });
+  }
+
+  // ── Last Updated On / Last Updated By columns (SCRUM-26) ─────────────────
+
+  async isColumnChooserCheckboxChecked(columnName) {
+    return test.step(`Check whether "${columnName}" checkbox is checked in the column chooser`, async () => {
+      return this.columnChooserCheckboxByLabel(columnName).isChecked();
+    });
+  }
+
+  async isColumnChooserCheckboxVisible(columnName) {
+    return test.step(`Verify "${columnName}" checkbox is visible in the column chooser`, async () => {
+      return this.columnChooserCheckboxByLabel(columnName).isVisible();
+    });
+  }
+
+  async isColumnChooserCheckboxEnabled(columnName) {
+    return test.step(`Verify "${columnName}" checkbox is enabled in the column chooser`, async () => {
+      return this.columnChooserCheckboxByLabel(columnName).isEnabled();
+    });
+  }
+
+  async toggleColumnChooserCheckbox(columnName) {
+    await test.step(`Toggle "${columnName}" checkbox in the column chooser`, async () => {
+      await this.columnChooserCheckboxByLabel(columnName).click();
+    });
+  }
+
+  async closeColumnChooserDropdown() {
+    await test.step('Close the column chooser dropdown', async () => {
+      await this.hoverOut.click();
+    });
+  }
+
+  async isColumnHeaderVisible(columnName) {
+    return test.step(`Verify "${columnName}" column header is visible in the grid`, async () => {
+      return this.columnsGrid(columnName).isVisible();
+    });
+  }
+
+  async getGridColumnHeaderNames() {
+    return test.step('Get the ordered list of grid column header names', async () => {
+      const headerTexts = await this.columnFilterHeaders.allTextContents();
+      return headerTexts.map((text) => text.trim()).filter(Boolean);
+    });
+  }
+
+  async waitForGridToLoad() {
+    await test.step('Wait for the Task List grid to load', async () => {
+      // The Task List page keeps background polling/websocket traffic alive, so
+      // page.waitForLoadState('networkidle') (BasePage.waitForLoad) never resolves here.
+      // Wait on a concrete grid element instead.
+      await this.columnsFilter.waitFor({ state: 'visible', timeout: settings.PAGE_LOAD_TIMEOUT });
+    });
+  }
+
+  async clickOnFilterFunnelIcon(columnName) {
+    await test.step(`Click filter funnel icon for "${columnName}" column`, async () => {
+      await this.filterFunnel(columnName).click();
+    });
+  }
+
+  async selectFirstDropdownOption() {
+    await test.step('Select the first option from the open dropdown list', async () => {
+      await this.dropdownOptionList.first().click();
     });
   }
 }
