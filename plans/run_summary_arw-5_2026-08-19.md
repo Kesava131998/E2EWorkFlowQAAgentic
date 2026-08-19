@@ -2,7 +2,7 @@
 Date    : 2026-08-19
 Repo    : manohar10173/Revflow-e2e-workflow
 Branch  : arw-5-ar-status-widget-display-applied
-PR      : (pending — raised in Stage 7)
+PR      : https://github.com/manohar10173/Revflow-e2e-workflow/pull/20 (draft)
 Jira    : https://vwiki281-1785763863770.atlassian.net/browse/ARW-5
 
 ## Stage Results
@@ -20,9 +20,12 @@ Jira    : https://vwiki281-1785763863770.atlassian.net/browse/ARW-5
 | Jira Defect Created | ✅ | ARW-8 (linked "Relates" to ARW-5) — AR Status widget tooltip text reads "Filters (HMO)" instead of the AC-specified "Payer Category Filters (HMO)" |
 | Postman Export | ⏭️ | User chose UI tests only — API test generation and Postman export skipped |
 | Branch Created | ✅ | arw-5-ar-status-widget-display-applied (from main) |
-| Commit + Push | ✅ | (recorded after commit) |
-| PR Raised | ✅ | (recorded after Stage 7) |
-| PR Review | ✅ | (recorded after Stage 9) |
+| Commit + Push | ✅ | 47f76d2 |
+| PR Raised | ✅ | https://github.com/manohar10173/Revflow-e2e-workflow/pull/20 (draft: yes) |
+| PR Review | ⚠️ | REQUEST_CHANGES (posted as PR comment, since GitHub blocks a literal review-request-changes event on one's own PR) — fixes applied and pushed (commit f923cc4): page-object encapsulation for tooltip hover/visibility, `test.skip` + ARW-8 link on the known-failing test |
+
+## PR Review Notes
+Reviewer flagged that `pages/sup_dashboard_page.js` shows a large diff against `main` because ARW-2's Payer Category filter methods (which ARW-5 depends on) haven't merged to `main` yet — this PR's diff therefore includes both ARW-2's and ARW-5's page-object changes. Not fixed here since it's a sequencing/merge-order decision, not a code defect; recommend merging ARW-2 first, or explicitly noting the dependency in the PR description for reviewers.
 
 ## Root Cause Notes
 - **Locator bug (fixed):** `SupDashboardPage.selectPayerCategory()` / `isPayerCategorySelected()` filtered `mat-checkbox` elements by `hasText`, but the category name renders in a sibling `<div>`, not inside the checkbox's own (empty) label — so the filter never matched. Fixed by introducing `payerCategoryOptionRow(categoryName)`, which locates the row by its text and scopes the checkbox click/state check to that row. Verified against both the new ARW-5 test and the pre-existing ARW-2 regression test (`'pos: select HMO and apply filters dashboard data'`), which was failing for the same reason.
