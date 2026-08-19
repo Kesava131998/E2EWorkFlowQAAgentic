@@ -724,20 +724,43 @@ python dashboard/utils/client.py event --type stage_start --stage jira_defects -
 
 Create **one combined Jira Bug** covering every test that is still failing after retries (and after any fix attempt from Checkpoint 2) — never one issue per failing test.
 
+**Summary** must be a single clear, human-readable line (not a raw template dump) — concise enough to scan in the Jira backlog, and specific enough to identify the failing area without opening the ticket. Describe the actual functional problem found, not that "a test failed":
+```
+[$TICKET] <short description of the bug> — $TICKET_SUMMARY
+```
+
+**Description** must be structured into exactly these four sections, in this order, matching the team's standard Jira bug format (Description → Steps to Reproduce → Actual Result → Expected Result). If multiple failing tests share the same root cause, one set of sections covering all of them is fine; only repeat sections when the failures are genuinely unrelated:
+
+- **Description** — a short plain-English statement of what's wrong (what broke and why it matters, not just the raw stack trace). Reference the relevant AC if one applies (e.g. "As per AC when X, Y should happen. But this is not working, resulting in Z.")
+- **Steps to Reproduce** — numbered, concrete steps a human could follow manually to hit the failure (login/navigate/act/observe) — not just "run this test file"
+- **Actual Result** — what actually happened (the observed behavior / assertion failure / error message)
+- **Expected Result** — what should have happened instead (from the test case's Expected Result column or the AC), as bullet points if there's more than one expected condition
+
 ```
 jira_create_issue(
   parent=$TICKET,
   issue_type="Bug",
-  summary="[$TICKET] <N> automation test(s) failing — $TICKET_SUMMARY",
+  summary="[$TICKET] <short description of the bug> — $TICKET_SUMMARY",
   description="""
-  Story: $TICKET ($TICKET_SUMMARY)
+  Description
+  <plain-English summary of what's failing, referencing the AC where applicable, and why it matters>
+
+  Steps to Reproduce:
+  1. <e.g. Login with valid credentials>
+  2. <e.g. Navigate to the relevant page>
+  3. <e.g. Perform the specific action that triggers the bug>
+  4. Observe <the failing behavior>
+
+  Actual Result:
+  <what was actually observed — error message, wrong value, missing element, etc.>
+
+  Expected Result:
+  - <expected condition 1, referencing field/AC>
+  - <expected condition 2, if applicable>
+
+  ---
   Branch/run: $BRANCH (or 'pending' if not yet created)
-
-  Failed tests:
-  - <test_name_1>: <error summary>
-  - <test_name_2>: <error summary>
-  ...
-
+  Failing test(s): <test_name_1>, <test_name_2>
   Screenshots: $FAILURE_SCREENSHOTS
   Videos: $FAILURE_VIDEOS
   """
@@ -750,12 +773,12 @@ jira_update_issue(issue_key=$TICKET, link={"type": "relates to", "issue": $DEFEC
 ```
 If a dedicated link call isn't available, note the relation in the Bug description instead (already included above) and proceed — this stage never blocks the workflow on a linking failure.
 
-Confirm: `"🐞 $DEFECT_KEY created — <N> failing test(s) logged against $TICKET"`
+Confirm: `"🐞 $DEFECT_KEY created — logged against $TICKET"`
 
 ```bash
 # 📊 Dashboard
 python dashboard/utils/client.py event --type stage_complete --stage jira_defects --level success \
-  --message "$DEFECT_KEY created for <N> failing test(s)" \
+  --message "$DEFECT_KEY created" \
   --data "{\"defect_key\":\"$DEFECT_KEY\",\"failed_count\":\"<N>\"}" 2>/dev/null || true
 ```
 
