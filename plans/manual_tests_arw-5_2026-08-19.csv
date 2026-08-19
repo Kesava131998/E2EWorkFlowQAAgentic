@@ -1,0 +1,92 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+1,AC1,Happy Path,High,"Filter indicator icon displays on the AR Status widget when a Payer Category filter is applied","User logged in as a valid RevFlow user; navigate to the Dashboard page; Dashboard fully loaded (no spinner)","Payer Category = HMO","1. Navigate to the Dashboard page
+2. Verify the page has loaded (loading spinner not visible)
+3. Verify the AR Status widget is visible
+4. Open the Payer Category filter dropdown
+5. Select the ""HMO"" checkbox
+6. Click the Apply button
+7. Verify the AR Status widget filter icon is visible","1. Dashboard page loads
+2. Spinner is not present
+3. AR Status widget is visible
+4. Payer Category dropdown opens
+5. ""HMO"" checkbox becomes checked
+6. Apply button is clicked and Dashboard data reloads
+7. AR Status widget displays the filter icon/indicator"
+2,AC1,Negative,Medium,"Filter indicator icon does not display on the AR Status widget when no Payer Category filter is applied","Dashboard fully loaded; no Payer Category filter applied","None","1. Navigate to the Dashboard page
+2. Verify the page has loaded (loading spinner not visible)
+3. Verify the AR Status widget is visible
+4. Verify no Payer Category filter has been applied
+5. Verify the AR Status widget filter icon is not visible","1. Dashboard page loads
+2. Spinner is not present
+3. AR Status widget is visible
+4. Payer Category filter control shows no applied value
+5. AR Status widget filter icon/indicator is not displayed"
+3,AC2,Happy Path,High,"Hovering over the filter indicator on the AR Status widget shows a tooltip with the applied Payer Category","AR Status widget filter icon is visible with ""HMO"" applied","Payer Category = HMO","1. Apply the Payer Category filter with ""HMO"" selected
+2. Verify the AR Status widget filter icon is visible
+3. Hover over the AR Status widget filter icon
+4. Verify the tooltip is visible
+5. Verify the tooltip text","1. Filter is applied
+2. Filter icon is visible on the AR Status widget
+3. Filter icon is hovered
+4. Tooltip becomes visible
+5. Tooltip displays ""Payer Category Filters (HMO)"""
+4,AC2,Negative,Medium,"No tooltip is shown when hovering over the AR Status widget area if no filter indicator is present","Dashboard fully loaded; no Payer Category filter applied","None","1. Navigate to the Dashboard page
+2. Verify the AR Status widget filter icon is not visible
+3. Hover over the AR Status widget header area where the icon would render
+4. Verify no filter tooltip is displayed","1. Dashboard page loads
+2. Filter icon is confirmed absent
+3. Hover is performed on the header area
+4. No Payer Category filter tooltip appears"
+5,AC3,Happy Path,High,"Filter indicator and tooltip update to reflect a newly selected Payer Category when the filter is changed","AR Status widget filter icon and tooltip show ""HMO"" applied","Payer Category changed from HMO to PPO","1. Apply the Payer Category filter with ""HMO"" selected
+2. Hover over the AR Status widget filter icon and verify the tooltip shows ""Payer Category Filters (HMO)""
+3. Open the Payer Category filter dropdown
+4. Deselect the ""HMO"" checkbox
+5. Select the ""PPO"" checkbox
+6. Click the Apply button
+7. Hover over the AR Status widget filter icon
+8. Verify the tooltip text","1. Filter is applied with HMO
+2. Tooltip shows ""Payer Category Filters (HMO)""
+3. Dropdown opens
+4. ""HMO"" checkbox becomes unchecked
+5. ""PPO"" checkbox becomes checked
+6. Apply button is clicked and Dashboard data reloads
+7. Filter icon is hovered
+8. Tooltip now displays ""Payer Category Filters (PPO)"""
+6,AC3,Happy Path,High,"Filter indicator disappears and no tooltip is shown when the applied Payer Category filter is removed","AR Status widget filter icon and tooltip show ""HMO"" applied","Payer Category removed","1. Apply the Payer Category filter with ""HMO"" selected
+2. Verify the AR Status widget filter icon is visible
+3. Open the Payer Category filter dropdown
+4. Deselect the ""HMO"" checkbox
+5. Click the Apply button
+6. Verify the AR Status widget filter icon is not visible","1. Filter is applied with HMO
+2. Filter icon is visible
+3. Dropdown opens
+4. ""HMO"" checkbox becomes unchecked
+5. Apply button is clicked and Dashboard data reloads
+6. AR Status widget filter icon/indicator is no longer displayed"
+7,AC3,Edge Case,Medium,"Tooltip lists all applied Payer Categories when multiple categories are selected","AR Status widget filter icon is visible","Payer Categories = HMO, PPO","1. Open the Payer Category filter dropdown
+2. Select the ""HMO"" checkbox
+3. Select the ""PPO"" checkbox
+4. Click the Apply button
+5. Hover over the AR Status widget filter icon
+6. Verify the tooltip text","1. Dropdown opens
+2. ""HMO"" checkbox becomes checked
+3. ""PPO"" checkbox becomes checked
+4. Apply button is clicked and Dashboard data reloads
+5. Filter icon is hovered
+6. Tooltip displays both applied categories, e.g. ""Payer Category Filters (HMO, PPO)"""
+8,AC1,RBAC,High,"AR Status widget filter indicator is accessible only to an authenticated Dashboard user","No active session (not logged in)","None","1. Attempt to navigate directly to the Dashboard page URL without logging in
+2. Verify the user is redirected to the login page
+3. Verify the AR Status widget and its filter indicator are not accessible","1. Navigation is attempted
+2. User is redirected to the Microsoft Azure AD SSO login page
+3. AR Status widget content and filter indicator are not visible without authentication"
+9,AC2,Verification,High,"Tooltip text on hover matches the exact wording specified in the acceptance criteria for the applied Payer Category","AR Status widget filter icon is visible with ""HMO"" applied","Payer Category = HMO","1. Apply the Payer Category filter with ""HMO"" selected
+2. Verify the AR Status widget filter icon is visible
+3. Hover over the AR Status widget filter icon
+4. Verify the tooltip is visible
+5. Read the exact tooltip text
+6. Compare the tooltip text against the AC-specified format ""Payer Category Filters (HMO)"" character-for-character","1. Filter is applied
+2. Filter icon is visible
+3. Filter icon is hovered
+4. Tooltip becomes visible
+5. Tooltip text is captured
+6. Tooltip text is an exact, case-sensitive match to ""Payer Category Filters (HMO)"" as shown in the AC/screenshot, with no extra characters, truncation, or formatting differences"

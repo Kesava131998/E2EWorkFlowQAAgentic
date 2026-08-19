@@ -1,4 +1,6 @@
+const { test, expect } = require('@playwright/test');
 const { BasePage } = require('./base_page');
+const { settings } = require('../config/settings');
 
 /**
  * Page object for the Supervisor Dashboard page (converted from dashborad.js /
@@ -53,12 +55,20 @@ class SupDashboardPage extends BasePage {
     this.viewAgingButton = page.locator("//arw-button[@category='secondary']");
 
     // ── AR Status widget ───────────────────────────────────────────────────
+    this.arStatusWidget = page.locator(
+      "//arw-ar-status-widget"
+    )
+
+    this.arStatusfilterIcon = page.locator("//arw-ar-status-widget//arw-icon[@name='filterFunnel01']");
+
     this.arStatusValues = page.locator(
       "//arw-ar-status-widget//div[contains(@class,'font-bold') and contains(@class,'justify-end')]"
     );
     this.arStatusTotal = page.locator(
       "//arw-ar-status-widget//div[contains(@class,'flex justify')]//span[contains(@class,'font-bold')]"
     );
+    this.tooltip = page.locator(`div.arw-tooltip-overlay.arw-tooltip-overlay--default`)
+      .last();
     this.payerCategoryDropdown = page.locator("//arw-ar-status-widget//arw-select-tree[@mode='dropdown']//button");
     this.balanceStatusPayerCategoryDropdown = page.locator(
       "//arw-balance-status-widget//arw-select-tree[@mode='dropdown']//button"
@@ -70,6 +80,12 @@ class SupDashboardPage extends BasePage {
     this.payerCategoryCheckboxes = page.locator(
       "//div[contains(@class,'cdk-virtual-scroll-content-wrapper')]//mat-checkbox"
     );
+    // The row's mat-checkbox has no label text of its own — the category name renders in a
+    // sibling <div>, so filtering payerCategoryCheckboxes by hasText never matches. Locate the
+    // row by its text instead, then scope the checkbox click/state check to that row.
+    this.payerCategoryOptionRow = (categoryName) => page.locator(
+      `//div[contains(@class,'cdk-virtual-scroll-content-wrapper')]//div[contains(@class,'ng-star-inserted')][.//span[normalize-space()='${categoryName}']]`
+    ).first();
     this.payerCategoriesDropDown = page.locator("//arw-dashboard-header//arw-select-tree[@mode='dropdown']//button");
     this.appliedPayerCategoryValue = (tab) => tab.locator(
       "//arw-dashboard-header//arw-select-tree[@mode='dropdown']//button//div[contains(@class,'arw-control-btn__value')]"
@@ -167,13 +183,139 @@ class SupDashboardPage extends BasePage {
     this.shareLinkToast = page.locator('arw-toast span.web-body-1.text-foreground-high');
 
     // ── Filters ─────────────────────────────────────────────────────────────
-    this.filterIcons = page.locator("//arw-icon[@name='filterFunnel01']");
     this.balanceStatusWidgetOptions = (optionName) => page.locator(
       `//button[@role='radio'][.//span[normalize-space()='${optionName}']]`
     );
     this.balanceStatusOptions = page.locator(
       "//div[contains(@class,'flex') and contains(@class,'justify-center') and contains(@class,'ng-star-inserted')]//button"
     );
+
+  }
+
+  // ── Payer Category filter actions ─────────────────────────────────────
+
+  async openPayerCategoryFilter() {
+    await test.step('Click Payer Category filter to open dropdown', async () => {
+      await expect(this.payerCategoriesDropDown).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.payerCategoriesDropDown.click();
+    });
+  }
+
+  async isPayerCategorySearchFieldVisible() {
+    return test.step('Verify Payer Category search field is visible', async () => {
+      return this.searchBoxField.isVisible();
+    });
+  }
+
+  async searchPayerCategory(categoryName) {
+    await test.step(`Search for "${categoryName}" in Payer Category search field`, async () => {
+      await expect(this.searchBoxField).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.searchBoxField.fill(categoryName);
+    });
+  }
+
+  async clearPayerCategorySearch() {
+    await test.step('Clear the Payer Category search field', async () => {
+      await this.searchBoxField.fill('');
+    });
+  }
+
+  async getPayerCategoryOptionsCount() {
+    return test.step('Count visible Payer Category options', async () => {
+      return this.payerCategoriesDropDownOptions.count();
+    });
+  }
+
+  async isPayerCategoryOptionVisible(categoryName) {
+    return test.step(`Verify Payer Category option "${categoryName}" is visible`, async () => {
+      return this.payerCategoriesDropDownOptions.filter({ hasText: categoryName }).first().isVisible();
+    });
+  }
+
+  async selectPayerCategory(categoryName) {
+    await test.step(`Select Payer Category checkbox for "${categoryName}"`, async () => {
+      const row = this.payerCategoryOptionRow(categoryName);
+      await expect(row).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await row.locator('mat-checkbox').click();
+    });
+  }
+
+  async isPayerCategorySelected(categoryName) {
+    return test.step(`Verify Payer Category "${categoryName}" checkbox is checked`, async () => {
+      const row = this.payerCategoryOptionRow(categoryName);
+      return row.locator('input.mdc-checkbox__native-control').isChecked();
+    });
+  }
+
+  async isApplyButtonEnabled() {
+    return test.step('Verify Apply button enabled state', async () => {
+      return this.applyBtn.isEnabled();
+    });
+  }
+
+  async clickApplyPayerCategoryFilter() {
+    await test.step('Click Apply to submit Payer Category filter', async () => {
+      await this.applyBtn.click();
+    });
+  }
+
+  async getAppliedPayerCategoryFilterValue() {
+    return test.step('Read the applied Payer Category filter value', async () => {
+      return this.payerCategoriesDropDown.innerText();
+    });
+  }
+
+  async navigateToDashboard() {
+    await test.step('Navigate to the Dashboard page', async () => {
+      await this.navigateTo(`${settings.BASE_URL}/dashboard`);
+    });
+  }
+
+  async waitForDashboardLoad() {
+    await test.step('Wait for Dashboard to finish loading', async () => {
+      await expect(this.dashboardPage).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.loadSpinner.first().waitFor({ state: 'hidden', timeout: settings.PAGE_LOAD_TIMEOUT });
+    });
+  }
+
+  async isPayerCategoryFilterVisible() {
+    return test.step('Verify Payer Category filter control is visible', async () => {
+      return this.payerCategoriesDropDown.isVisible();
+    });
+  }
+
+  async isPayerCategoryDropdownOpen() {
+    return test.step('Verify Payer Category dropdown panel is visible', async () => {
+      return this.payerCategoriesDropDownOptions.first().isVisible();
+    });
+  }
+
+  async closePayerCategoryDropdownByClickingOutside() {
+    await test.step('Click outside the Payer Category dropdown to close it', async () => {
+      await this.dashboardPage.click({ position: { x: 0, y: 0 } });
+    });
+  }
+
+  // ── AR Status widget filter indicator actions ──────────────────────────
+
+  async isArStatusFilterIconVisible() {
+    return test.step('Verify the AR Status widget filter icon is visible', async () => {
+      return this.arStatusfilterIcon.isVisible();
+    });
+  }
+
+  async hoverArStatusFilterIcon() {
+    await test.step('Hover over the AR Status widget filter icon', async () => {
+      await expect(this.arStatusfilterIcon).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.arStatusfilterIcon.hover();
+    });
+  }
+
+  async getArStatusFilterTooltipText() {
+    return test.step('Read the AR Status widget filter tooltip text', async () => {
+      await expect(this.tooltip).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      return this.tooltip.innerText();
+    });
   }
 }
 
