@@ -70,9 +70,13 @@ class SupDashboardPage extends BasePage {
     this.tooltip = page.locator(`div.arw-tooltip-overlay.arw-tooltip-overlay--default`)
       .last();
     this.payerCategoryDropdown = page.locator("//arw-ar-status-widget//arw-select-tree[@mode='dropdown']//button");
-    this.balanceStatusPayerCategoryDropdown = page.locator(
-      "//arw-balance-status-widget//arw-select-tree[@mode='dropdown']//button"
+    this.balanceStatusWidget = page.locator(
+      "//arw-balance-status-widget"
     );
+    this.balanceStatusStatusfilterIcon = page.locator(
+      "//arw-balance-status-widget//arw-icon[@name='filterFunnel01']"
+    );
+
 
     // ── Payer category dropdown / options ─────────────────────────────────
     this.payerCategoriesDropDownOptions = page.locator("//div[@class='cdk-virtual-scroll-content-wrapper ng-scroll-content']//span");
