@@ -71,6 +71,13 @@ export function useWorkflowSocket() {
             next.raise_heal_pr = 'skipped'
           }
         }
+        // If the test run passed cleanly, there's no bug to log — skip the defect stage
+        if (event.stage === 'run_tests') {
+          const failed = parseInt(event.data?.failed ?? '0', 10)
+          if (failed === 0) {
+            next.jira_defects = 'skipped'
+          }
+        }
         return next
       })
       if (event.data?.artifacts?.length) {

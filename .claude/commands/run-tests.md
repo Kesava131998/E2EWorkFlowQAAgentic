@@ -36,7 +36,16 @@ npx playwright install --with-deps
 node -e "require('dotenv').config(); console.log('TARGET:', process.env.BASE_URL)"
 ```
 
-### Step 2 — Choose run mode
+### Step 2 — Clear stale artifacts, then choose run mode
+
+`reports/allure-results` and `test-results` are never cleaned automatically — results
+from every prior run accumulate on disk and get merged into the next Allure report
+unless removed first. Clear them before every run (running via `npm test`/`npm run
+test:*` does this automatically via the `pretest*` npm hooks; if invoking `npx
+playwright test` directly, run this first):
+```bash
+rm -rf reports/allure-results/* test-results/* 2>/dev/null || true
+```
 
 **Run ALL tests (default — uses `playwright.config.js` settings):**
 ```bash
@@ -80,9 +89,15 @@ After the run completes, report to the user:
 - List of failed test names with their error summary
 - Time taken
 
-### Step 4 — Open Allure report (if requested or on failure)
+### Step 4 — Open the report (if requested or on failure)
 
-**Serve interactive Allure report:**
+**Open Playwright's own HTML report** (auto-launches the default browser):
+```bash
+npx playwright show-report reports/html
+```
+
+**Serve interactive Allure report** (also auto-launches the browser; since Step 2
+cleared `reports/allure-results` before this run, it reflects only this run):
 ```bash
 npx allure serve reports/allure-results
 ```

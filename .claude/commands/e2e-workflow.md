@@ -556,6 +556,11 @@ HITL_FEEDBACK=$(echo "$HITL_OUT" | grep "^HITL_FEEDBACK:" | sed 's/^HITL_FEEDBAC
 python dashboard/utils/client.py event --type stage_start --stage run_tests --message "Running tests: $TEST_FILTER" 2>/dev/null || true
 ```
 
+**Clear stale artifacts first** — `reports/allure-results` and `test-results` are never cleaned automatically, so results from every prior run stay on disk and get merged into the next Allure report unless removed first. Always run this immediately before the test command, every time this stage runs:
+```bash
+rm -rf reports/allure-results/* test-results/* 2>/dev/null || true
+```
+
 ```bash
 npx playwright test $TEST_FILTER --headed --retries=1
 ```
@@ -580,9 +585,14 @@ find test-results/ -name "trace.zip" 2>/dev/null
 ```
 Store artifact paths as `$FAILURE_SCREENSHOTS` and `$FAILURE_VIDEOS`.
 
-Open Allure report:
+Open the reports for this run (both auto-launch a browser tab — the same "opens automatically" behaviour as the dashboard):
 ```bash
-npx allure serve reports/allure-results
+# Playwright's own HTML report for this run (opens in the default browser)
+npx playwright show-report reports/html &
+
+# Allure report — since reports/allure-results was cleared before this run, it now
+# contains only this run's results, so the served report reflects this run only
+npx allure serve reports/allure-results &
 ```
 
 ```bash

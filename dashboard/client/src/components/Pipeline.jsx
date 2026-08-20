@@ -151,6 +151,19 @@ function RunTestsCard({ d }) {
   )
 }
 
+function JiraDefectsCard({ d }) {
+  return (
+    <Card>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {d.defect_key
+          ? <Chip color="red">🐞 {d.defect_key}</Chip>
+          : <Chip color="green">No defects — all tests passed</Chip>}
+        {d.failed_count != null && <Chip color="gray">{d.failed_count} failing</Chip>}
+      </div>
+    </Card>
+  )
+}
+
 function PostmanCard({ d }) {
   return (
     <Card>
@@ -326,6 +339,7 @@ const STAGE_CARDS = {
   test_cases: TestCasesCard,
   generate_tests: GenerateTestsCard,
   run_tests: RunTestsCard,
+  jira_defects: JiraDefectsCard,
   postman_export: PostmanCard,
   commit_push: CommitCard,
   raise_pr: RaisePrCard,
@@ -349,6 +363,7 @@ const STAGE_ICONS = {
   test_cases: FileText,
   generate_tests: Settings,
   run_tests: FlaskConical,
+  jira_defects: AlertCircle,
   postman_export: Send,
   commit_push: Package,
   raise_pr: GitPullRequest,

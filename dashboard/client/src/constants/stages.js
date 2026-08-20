@@ -4,6 +4,7 @@ export const STAGES = [
   { id: 'test_cases', label: 'Test Cases', icon: '📋', color: '#06b6d4' },
   { id: 'generate_tests', label: 'Generate Tests', icon: '⚙️', color: '#f59e0b' },
   { id: 'run_tests', label: 'Run Tests', icon: '🧪', color: '#ef4444' },
+  { id: 'jira_defects', label: 'Log Defect', icon: '🐞', color: '#dc2626' },
   { id: 'postman_export', label: 'Postman Export', icon: '📮', color: '#f97316' },
   { id: 'branch_create', label: 'Create Branch', icon: '🌿', color: '#22c55e' },
   { id: 'commit_push', label: 'Commit & Push', icon: '📦', color: '#8b5cf6' },

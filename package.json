@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "description": "RevFlow Playwright automation suite (JavaScript / @playwright/test)",
   "scripts": {
+    "clean:reports": "node -e \"const fs=require('fs');['reports/allure-results','test-results'].forEach(d=>fs.rmSync(d,{recursive:true,force:true}))\"",
+    "pretest": "npm run clean:reports",
+    "pretest:headed": "npm run clean:reports",
+    "pretest:chromium": "npm run clean:reports",
+    "pretest:firefox": "npm run clean:reports",
+    "pretest:webkit": "npm run clean:reports",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:chromium": "playwright test --project=chromium",
