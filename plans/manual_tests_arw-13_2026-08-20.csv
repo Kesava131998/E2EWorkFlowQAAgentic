@@ -1,0 +1,50 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+1,AC1,Happy Path,High,Tasks Worked widget shows exactly 3 Martin legend items when data is available,"User is logged in as a Supervisor and has navigated to the Dashboard page; Tasks Worked widget has data (not ""No Data"" state)",None,"1. Navigate to the Dashboard page.
+2. Verify the Dashboard page has finished loading (spinner hidden).
+3. Verify the Tasks Worked widget is visible and not showing ""No Data"".
+4. Scroll the Martin legend container into view.
+5. Count the Martin legend items (taskWorkedMartins).","1. Dashboard page is displayed.
+2. Loading spinner is hidden; widgets are rendered.
+3. Tasks Worked widget is visible with data present.
+4. Martin legend container is visible in viewport.
+5. Exactly 3 Martin legend items are counted."
+2,AC1,Edge Case,Medium,Tasks Worked widget shows no Martin legend items when there is no data,"User is logged in as a Supervisor; Tasks Worked widget has no underlying data (""No Data"" state)",None,"1. Navigate to the Dashboard page.
+2. Verify the Dashboard page has finished loading.
+3. Verify the Tasks Worked widget displays the ""No Data"" indicator.
+4. Attempt to count Martin legend items.","1. Dashboard page is displayed.
+2. Loading spinner is hidden.
+3. ""No Data"" text is visible inside the Tasks Worked widget.
+4. 0 Martin legend items are present - no tooltip assertions are attempted."
+3,AC2,Happy Path,High,Hovering the 1st Martin legend item shows the ""within 2 days"" tooltip,Tasks Worked widget has data; 3 Martin legend items are confirmed present (Test Case 1),None,"1. Scroll the 1st Martin legend item into view.
+2. Hover over the 1st Martin legend item.
+3. Wait for the tooltip to become visible.
+4. Read the tooltip text.
+5. Move the mouse away from the item.","1. 1st Martin legend item is visible in viewport.
+2. Item is hovered; tooltip trigger is activated.
+3. Tooltip becomes visible.
+4. Tooltip text equals ""Balance status updated within 2 days of due date"".
+5. Mouse moves away and tooltip is dismissed."
+4,AC2,Happy Path,High,Hovering the 2nd Martin legend item shows the ""3-7 days"" tooltip,Tasks Worked widget has data; 3 Martin legend items are confirmed present,None,"1. Scroll the 2nd Martin legend item into view.
+2. Hover over the 2nd Martin legend item.
+3. Wait for the tooltip to become visible.
+4. Read the tooltip text.
+5. Move the mouse away from the item.","1. 2nd Martin legend item is visible in viewport.
+2. Item is hovered; tooltip trigger is activated.
+3. Tooltip becomes visible.
+4. Tooltip text equals ""Balance status updated within 3 - 7 days of due date"".
+5. Mouse moves away and tooltip is dismissed."
+5,AC2,Happy Path,High,Hovering the 3rd Martin legend item shows the "">8 days"" tooltip,Tasks Worked widget has data; 3 Martin legend items are confirmed present,None,"1. Scroll the 3rd Martin legend item into view.
+2. Hover over the 3rd Martin legend item.
+3. Wait for the tooltip to become visible.
+4. Read the tooltip text.
+5. Move the mouse away from the item.","1. 3rd Martin legend item is visible in viewport.
+2. Item is hovered; tooltip trigger is activated.
+3. Tooltip becomes visible.
+4. Tooltip text equals ""Balance status updated > 8 days of due date"" per AC (verify against current app behavior - existing code expects "">7 days"").
+5. Mouse moves away and tooltip is dismissed."
+6,AC2,Negative,Medium,Tooltip is not shown when no Martin legend item is hovered,Tasks Worked widget has data; mouse is not hovering any Martin legend item,None,"1. Ensure the mouse is positioned away from all Martin legend items (e.g. move to (0,0)).
+2. Check whether the widget tooltip element is visible.","1. Mouse cursor is at a neutral position, not over any legend item.
+2. No Martin legend tooltip is visible."
+7,AC2,RBAC,High,Unauthenticated user cannot view Tasks Worked widget or its tooltips,User is logged out / session cleared,None,"1. Attempt to navigate directly to the Dashboard page URL without an authenticated session.
+2. Observe the resulting page/redirect.","1. Navigation is attempted.
+2. User is redirected to the login page (Tasks Worked widget and its Martin legend/tooltips are not rendered)."
