@@ -77,6 +77,12 @@ class SupDashboardPage extends BasePage {
       "//arw-balance-status-widget//arw-icon[@name='filterFunnel01']"
     );
 
+    // ── Overdue Tasks widget (ARW-17) ─────────────────────────────────────
+    this.overdueTasksWidget = page.locator("//arw-overdue-tasks-widget");
+    this.overdueTasksFilterIcon = page.locator(
+      "//arw-overdue-tasks-widget//arw-icon[@name='filterFunnel01']"
+    );
+
 
     // ── Payer category dropdown / options ─────────────────────────────────
     this.payerCategoriesDropDownOptions = page.locator("//div[@class='cdk-virtual-scroll-content-wrapper ng-scroll-content']//span");
@@ -339,6 +345,102 @@ class SupDashboardPage extends BasePage {
     await test.step('Hover over the AR Status widget header area', async () => {
       await expect(this.arStatusWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
       await this.arStatusWidget.hover();
+    });
+  }
+
+  // ── Overdue Tasks widget filter indicator actions (ARW-17) ─────────────
+
+  async isOverdueTasksWidgetVisible() {
+    return test.step('Verify the Overdue Tasks widget is visible', async () => {
+      return this.overdueTasksWidget.isVisible();
+    });
+  }
+
+  async isOverdueTasksFilterIconVisible() {
+    return test.step('Verify the Overdue Tasks widget filter icon is visible', async () => {
+      return this.overdueTasksFilterIcon.isVisible();
+    });
+  }
+
+  async hoverOverdueTasksFilterIcon() {
+    await test.step('Hover over the Overdue Tasks widget filter icon', async () => {
+      await expect(this.overdueTasksFilterIcon).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.overdueTasksFilterIcon.scrollIntoViewIfNeeded();
+      await this.overdueTasksFilterIcon.hover();
+    });
+  }
+
+  async getOverdueTasksFilterTooltipText() {
+    return test.step('Read the Overdue Tasks widget filter tooltip text', async () => {
+      await expect(this.tooltip).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      return (await this.tooltip.innerText()).trim();
+    });
+  }
+
+  async isOverdueTasksFilterTooltipVisible() {
+    return test.step('Verify the Overdue Tasks widget filter tooltip is visible', async () => {
+      return this.tooltip.isVisible();
+    });
+  }
+
+  async hoverOverdueTasksWidget() {
+    await test.step('Hover over the Overdue Tasks widget header area', async () => {
+      await expect(this.overdueTasksWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.overdueTasksWidget.scrollIntoViewIfNeeded();
+      await this.overdueTasksWidget.hover();
+    });
+  }
+
+  // The Payer Category filter is a per-user preference that survives navigation and page
+  // reloads (see verifyDashboardRefreshClearsPayerCategoryFilter), and selectPayerCategory()
+  // toggles rather than sets. With workers: 1 and a shared storageState, a filter applied by
+  // one test leaks into the next, so tests that require an unfiltered Dashboard must reset first.
+  async resetPayerCategoryFilter() {
+    await test.step('Reset the Payer Category filter to its unfiltered state', async () => {
+      await expect(this.payerCategoriesDropDown).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+
+      if ((await this.filterIcons.count()) === 0) {
+        return;
+      }
+
+      await this.payerCategoriesDropDown.click();
+      await this.uncheckAllSelectedPayerCategories();
+
+      if (await this.applyBtn.isEnabled()) {
+        await this.applyBtn.click();
+      } else {
+        await this.closePayerCategoryDropdownByClickingOutside();
+      }
+
+      await expect(this.loadSpinner).toHaveCount(0, { timeout: settings.PAGE_LOAD_TIMEOUT });
+      await expect(this.filterIcons).toHaveCount(0, { timeout: settings.TIMEOUT });
+    });
+  }
+
+  async selectPayerCategoryOtherThan(excludedCategoryName) {
+    return test.step(`Select the first Payer Category option other than "${excludedCategoryName}"`, async () => {
+      await this.payerCategoriesDropDownOptions.first().waitFor({
+        state: 'visible',
+        timeout: settings.TIMEOUT,
+      });
+
+      const optionCount = await this.payerCategoriesDropDownOptions.count();
+      expect(optionCount, 'Payer Category dropdown should list at least one option').toBeGreaterThan(0);
+
+      for (let i = 0; i < optionCount; i++) {
+        const option = this.payerCategoriesDropDownOptions.nth(i);
+        const optionName = (await option.innerText()).trim();
+
+        if (optionName && optionName !== excludedCategoryName) {
+          await option.scrollIntoViewIfNeeded();
+          await option.click();
+          return optionName;
+        }
+      }
+
+      throw new Error(
+        `No Payer Category option other than "${excludedCategoryName}" is available to switch to`
+      );
     });
   }
 
