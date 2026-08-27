@@ -28,6 +28,9 @@ class SupDashboardPage extends BasePage {
     this.taskWorkedAvatarToolpits = page.locator("//arw-tasks-worked-widget//arw-avatar");
     this.taskUpdateWidget = page.locator('//arw-task-updates-widget');
     this.taskUpdateCanvas = page.locator("//arw-task-updates-widget//canvas");
+    this.taskUpdatesFilterIcon = page.locator(
+      "//arw-task-updates-widget//arw-icon[@name='filterFunnel01']"
+    );
     this.timePeriod = page.locator("(//div[@class='mat-mdc-select-trigger'])[1]");
     this.timePeriodOptions = (days) => page.locator(`//div[normalize-space(text())='${days}']`);
     this.allTaskWorkedMartins = page.locator("//div[@class='flex gap-20 mt-8']");
@@ -388,6 +391,41 @@ class SupDashboardPage extends BasePage {
       await expect(this.overdueTasksWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
       await this.overdueTasksWidget.scrollIntoViewIfNeeded();
       await this.overdueTasksWidget.hover();
+    });
+  }
+
+  // ── Task Updates widget filter indicator actions (ARW-18) ──────────────
+
+  async isTaskUpdatesWidgetVisible() {
+    return test.step('Verify the Task Updates widget is visible', async () => {
+      return this.taskUpdateWidget.isVisible();
+    });
+  }
+
+  async isTaskUpdatesFilterIconVisible() {
+    return test.step('Verify the Task Updates widget filter icon is visible', async () => {
+      return this.taskUpdatesFilterIcon.isVisible();
+    });
+  }
+
+  async hoverTaskUpdatesFilterIcon() {
+    await test.step('Hover over the Task Updates widget filter icon', async () => {
+      await expect(this.taskUpdatesFilterIcon).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.taskUpdatesFilterIcon.scrollIntoViewIfNeeded();
+      await this.taskUpdatesFilterIcon.hover();
+    });
+  }
+
+  async getTaskUpdatesFilterTooltipText() {
+    return test.step('Read the Task Updates widget filter tooltip text', async () => {
+      await expect(this.tooltip).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      return (await this.tooltip.innerText()).trim();
+    });
+  }
+
+  async isTaskUpdatesFilterTooltipVisible() {
+    return test.step('Verify the Task Updates widget filter tooltip is visible', async () => {
+      return this.tooltip.isVisible();
     });
   }
 
