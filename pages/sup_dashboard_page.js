@@ -18,7 +18,7 @@ class SupDashboardPage extends BasePage {
     this.agingModuleCard = page.locator("(//div[@class='module-card'])[2]");
 
     // ── Dashboard root / spinner ─────────────────────────────────────────
-    this.dashboardPage = page.locator("//arw-dashboard[@class='arw-page ng-star-inserted']");
+    this.dashboardPage = page.locator("//arw-dashboard[contains(@class,'arw-page')]");
     this.loadSpinner = page.locator("//mat-spinner[@role='progressbar']");
 
     // ── Tasks Worked / Task Updates widgets ──────────────────────────────
@@ -97,7 +97,7 @@ class SupDashboardPage extends BasePage {
     // sibling <div>, so filtering payerCategoryCheckboxes by hasText never matches. Locate the
     // row by its text instead, then scope the checkbox click/state check to that row.
     this.payerCategoryOptionRow = (categoryName) => page.locator(
-      `//div[contains(@class,'cdk-virtual-scroll-content-wrapper')]//div[contains(@class,'ng-star-inserted')][.//span[normalize-space()='${categoryName}']]`
+      `//div[contains(@class,'cdk-virtual-scroll-content-wrapper')]//div[contains(@class,'web-body-1')][.//span[normalize-space()='${categoryName}']]`
     ).first();
     this.payerCategoriesDropDown = page.locator("//arw-dashboard-header//arw-select-tree[@mode='dropdown']//button");
     this.appliedPayerCategoryValue = (tab) => tab.locator(
