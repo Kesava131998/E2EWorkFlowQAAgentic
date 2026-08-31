@@ -1,0 +1,76 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+1,AC1,Happy Path,High,Filter indicator displays when a Payer Category filter is applied,"1. Navigate to https://revflow-dev.axgsolutions.com/ and log in via Microsoft SSO.
+2. Land on the Supervisor Dashboard with the Unworked Tasks widget visible.
+3. No Payer Category filter currently applied.",Payer Category = Medicaid,"1. Verify the Dashboard page has finished loading.
+2. Verify the Payer Category filter control is visible in the Dashboard header.
+3. Click the Payer Category filter control to open it.
+4. Search for Medicaid in the filter search box.
+5. Select the Medicaid option from the results.
+6. Click the Apply button on the filter panel.
+7. Verify the Unworked Tasks widget is visible.
+8. Verify the filter indicator/icon is visible on the Unworked Tasks widget.","1. Dashboard has finished loading (loading spinner absent).
+2. Payer Category filter control is visible and clickable.
+3. Filter panel/dropdown opens.
+4. Search box shows Medicaid as typed and the option is present in the filtered list.
+5. Medicaid option is shown as selected (checked).
+6. Filter panel closes and the Dashboard refreshes data for Medicaid.
+7. Unworked Tasks widget is rendered on the Dashboard.
+8. Filter icon/indicator is visible on the Unworked Tasks widget header."
+2,AC1,Negative,Medium,Filter indicator does not display when no Payer Category filter is applied,"1. Navigate to the Dashboard.
+2. Ensure any previously applied Payer Category filter is reset/cleared.",None,"1. Verify the Dashboard page has finished loading.
+2. Reset the Payer Category filter (clear any prior selection).
+3. Verify the Unworked Tasks widget is visible.
+4. Verify the filter indicator/icon is NOT visible on the Unworked Tasks widget.","1. Dashboard has finished loading.
+2. No Payer Category is selected; filter is cleared.
+3. Unworked Tasks widget is rendered on the Dashboard.
+4. Filter icon/indicator is absent from the Unworked Tasks widget header."
+3,AC2,Happy Path,High,Tooltip displays applied Payer Category on hover of the filter indicator,"1. Navigate to the Dashboard.
+2. Reset any previously applied Payer Category filter.",Payer Category = Medicaid,"1. Open the Payer Category filter control.
+2. Search for and select Medicaid.
+3. Click Apply.
+4. Verify the Unworked Tasks widget filter indicator is displayed.
+5. Hover the mouse pointer over the filter indicator.
+6. Verify a tooltip appears.
+7. Read the tooltip text.","1. Filter panel opens.
+2. Medicaid is selected in the filter.
+3. Filter is applied and panel closes.
+4. Filter indicator icon is visible on the widget.
+5. Pointer is positioned over the indicator element.
+6. Tooltip element becomes visible.
+7. Tooltip text reads 'Payer Category Filters (Medicaid)'."
+4,AC2,Edge Case,Medium,Tooltip reflects multiple selected Payer Categories,"1. Navigate to the Dashboard.
+2. Reset any previously applied Payer Category filter.",Two distinct Payer Category options selected at random from the dropdown,"1. Open the Payer Category filter control.
+2. Select two distinct Payer Category options.
+3. Click Apply.
+4. Hover over the Unworked Tasks widget filter indicator.
+5. Verify the tooltip is visible.
+6. Read the tooltip text and check it references both selected categories.","1. Filter panel opens.
+2. Both options show as selected (checked).
+3. Filter is applied; both categories are now active.
+4. Pointer is positioned over the indicator element.
+5. Tooltip element becomes visible.
+6. Tooltip text contains the names of both selected Payer Categories."
+5,AC3,Happy Path,High,Filter indicator and tooltip update when the Payer Category filter is changed,"1. Navigate to the Dashboard.
+2. Reset any previously applied Payer Category filter.","Initial: Medicaid; Changed to: any other available Payer Category","1. Apply the Payer Category filter with Medicaid selected.
+2. Hover the filter indicator and confirm the tooltip shows Medicaid.
+3. Re-open the filter, deselect Medicaid, and select a different Payer Category.
+4. Click Apply.
+5. Verify the filter indicator is still displayed.
+6. Hover the filter indicator again and read the tooltip.","1. Medicaid filter is applied; indicator appears.
+2. Tooltip text contains Medicaid.
+3. Filter panel shows the new category selected and Medicaid deselected.
+4. Filter is re-applied with the new category active.
+5. Filter indicator remains visible on the Unworked Tasks widget.
+6. Tooltip text contains the newly applied category and no longer contains Medicaid."
+6,AC3,Happy Path,High,Filter indicator and tooltip are cleared when the Payer Category filter is removed,"1. Navigate to the Dashboard.
+2. Reset any previously applied Payer Category filter.","Initial: Medicaid, then removed","1. Apply the Payer Category filter with Medicaid selected.
+2. Verify the filter indicator is displayed.
+3. Remove/reset the applied Payer Category filter.
+4. Verify the filter indicator is no longer displayed.
+5. Hover over where the indicator was on the Unworked Tasks widget.
+6. Verify no tooltip is displayed.","1. Medicaid filter is applied; indicator appears.
+2. Filter indicator icon is visible.
+3. Filter is cleared/reset; no Payer Category remains selected.
+4. Filter indicator icon is no longer visible on the widget.
+5. Pointer hovers over the widget area.
+6. No filter tooltip is rendered."
