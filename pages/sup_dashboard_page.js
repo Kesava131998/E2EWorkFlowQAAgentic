@@ -18,7 +18,7 @@ class SupDashboardPage extends BasePage {
     this.agingModuleCard = page.locator("(//div[@class='module-card'])[2]");
 
     // ── Dashboard root / spinner ─────────────────────────────────────────
-    this.dashboardPage = page.locator("//arw-dashboard[@class='arw-page ng-star-inserted']");
+    this.dashboardPage = page.locator("//arw-dashboard[contains(@class,'arw-page')]");
     this.loadSpinner = page.locator("//mat-spinner[@role='progressbar']");
 
     // ── Tasks Worked / Task Updates widgets ──────────────────────────────
@@ -34,6 +34,10 @@ class SupDashboardPage extends BasePage {
     this.taskWorkedMartins = page.locator("//div[@class='flex gap-20 mt-8']//div//div");
 
     // ── Highest Balances widget ───────────────────────────────────────────
+    this.highestBalancesWidget = page.locator("//arw-highest-balances-widget");
+    this.highestBalancesFilterIcon = page.locator(
+      "//arw-highest-balances-widget//arw-icon[@name='filterFunnel01']"
+    );
     this.highestBalancesLabel = page.locator("//div[normalize-space(text())='Highest Balances']");
     this.balanceLabels = page.locator(
       "//arw-highest-balances-widget//ng-scrollbar//div[contains(@class,'flex py-4')]/div[4]"
@@ -87,8 +91,8 @@ class SupDashboardPage extends BasePage {
     // The row's mat-checkbox has no label text of its own — the category name renders in a
     // sibling <div>, so filtering payerCategoryCheckboxes by hasText never matches. Locate the
     // row by its text instead, then scope the checkbox click/state check to that row.
-    this.payerCategoryOptionRow = (categoryName) => page.locator(
-      `//div[contains(@class,'cdk-virtual-scroll-content-wrapper')]//div[contains(@class,'ng-star-inserted')][.//span[normalize-space()='${categoryName}']]`
+    this.payerCategoryOptionRow =(categoryName) => page.locator(
+      `//div[contains(@class,'cdk-virtual-scroll-content-wrapper')]//div[contains(@class,'web-body-1')][.//span[normalize-space()='${categoryName}']]`
     ).first();
     this.payerCategoriesDropDown = page.locator("//arw-dashboard-header//arw-select-tree[@mode='dropdown']//button");
     this.appliedPayerCategoryValue = (tab) => tab.locator(
@@ -339,6 +343,102 @@ class SupDashboardPage extends BasePage {
     await test.step('Hover over the AR Status widget header area', async () => {
       await expect(this.arStatusWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
       await this.arStatusWidget.hover();
+    });
+  }
+
+  // ── Highest Balances widget filter indicator actions (ARW-33) ──────────
+
+  async isHighestBalancesWidgetVisible() {
+    return test.step('Verify the Highest Balances widget is visible', async () => {
+      return this.highestBalancesWidget.isVisible();
+    });
+  }
+
+  async isHighestBalancesFilterIconVisible() {
+    return test.step('Verify the Highest Balances widget filter icon is visible', async () => {
+      return this.highestBalancesFilterIcon.isVisible();
+    });
+  }
+
+  async hoverHighestBalancesFilterIcon() {
+    await test.step('Hover over the Highest Balances widget filter icon', async () => {
+      await expect(this.highestBalancesFilterIcon).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.highestBalancesFilterIcon.scrollIntoViewIfNeeded();
+      await this.highestBalancesFilterIcon.hover();
+    });
+  }
+
+  async getHighestBalancesFilterTooltipText() {
+    return test.step('Read the Highest Balances widget filter tooltip text', async () => {
+      await expect(this.tooltip).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      return (await this.tooltip.innerText()).trim();
+    });
+  }
+
+  async isHighestBalancesFilterTooltipVisible() {
+    return test.step('Verify the Highest Balances widget filter tooltip is visible', async () => {
+      return this.tooltip.isVisible();
+    });
+  }
+
+  async hoverHighestBalancesWidget() {
+    await test.step('Hover over the Highest Balances widget header area', async () => {
+      await expect(this.highestBalancesWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.highestBalancesWidget.scrollIntoViewIfNeeded();
+      await this.highestBalancesWidget.hover();
+    });
+  }
+
+  // The Payer Category filter is a per-user preference that survives navigation and page
+  // reloads (see verifyDashboardRefreshClearsPayerCategoryFilter), and selectPayerCategory()
+  // toggles rather than sets. With workers: 1 and a shared storageState, a filter applied by
+  // one test leaks into the next, so tests that require an unfiltered Dashboard must reset first.
+  async resetPayerCategoryFilter() {
+    await test.step('Reset the Payer Category filter to its unfiltered state', async () => {
+      await expect(this.payerCategoriesDropDown).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+
+      if ((await this.filterIcons.count()) === 0) {
+        return;
+      }
+
+      await this.payerCategoriesDropDown.click();
+      await this.uncheckAllSelectedPayerCategories();
+
+      if (await this.applyBtn.isEnabled()) {
+        await this.applyBtn.click();
+      } else {
+        await this.closePayerCategoryDropdownByClickingOutside();
+      }
+
+      await expect(this.loadSpinner).toHaveCount(0, { timeout: settings.PAGE_LOAD_TIMEOUT });
+      await expect(this.filterIcons).toHaveCount(0, { timeout: settings.TIMEOUT });
+    });
+  }
+
+  async selectPayerCategoryOtherThan(excludedCategoryName) {
+    return test.step(`Select the first Payer Category option other than "${excludedCategoryName}"`, async () => {
+      await this.payerCategoriesDropDownOptions.first().waitFor({
+        state: 'visible',
+        timeout: settings.TIMEOUT,
+      });
+
+      const optionCount = await this.payerCategoriesDropDownOptions.count();
+      expect(optionCount, 'Payer Category dropdown should list at least one option').toBeGreaterThan(0);
+
+      for (let i = 0; i < optionCount; i++) {
+        const option = this.payerCategoriesDropDownOptions.nth(i);
+        const optionName = (await option.innerText()).trim();
+
+        if (optionName && optionName !== excludedCategoryName) {
+          await option.scrollIntoViewIfNeeded();
+          await option.click();
+          return optionName;
+        }
+      }
+
+      throw new Error(
+        `No Payer Category option other than "${excludedCategoryName}" is available to switch to`
+      );
     });
   }
 
