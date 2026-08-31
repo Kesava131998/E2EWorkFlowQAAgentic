@@ -48,6 +48,10 @@ class SupDashboardPage extends BasePage {
     this.balancesListHighestBalancesAmount = (row) => row.locator("a[href*='/balances']").first();
 
     // ── Unworked Tasks widget ─────────────────────────────────────────────
+    this.unworkedTasksWidget = page.locator("//arw-unworked-tasks-widget");
+    this.unworkedTasksFilterIcon = page.locator(
+      "//arw-unworked-tasks-widget//arw-icon[@name='filterFunnel01']"
+    );
     this.unworkedTasksLabel = page.locator("//div[normalize-space(text())='Unworked Tasks']");
     this.unworkedTasksResidentNameLinks = page.locator(
       "(//div[normalize-space(text())='Resident'])[2]/following::a"
@@ -339,6 +343,102 @@ class SupDashboardPage extends BasePage {
     await test.step('Hover over the AR Status widget header area', async () => {
       await expect(this.arStatusWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
       await this.arStatusWidget.hover();
+    });
+  }
+
+  // ── Unworked Tasks widget filter indicator actions (ARW-34) ────────────
+
+  async isUnworkedTasksWidgetVisible() {
+    return test.step('Verify the Unworked Tasks widget is visible', async () => {
+      return this.unworkedTasksWidget.isVisible();
+    });
+  }
+
+  async isUnworkedTasksFilterIconVisible() {
+    return test.step('Verify the Unworked Tasks widget filter icon is visible', async () => {
+      return this.unworkedTasksFilterIcon.isVisible();
+    });
+  }
+
+  async hoverUnworkedTasksFilterIcon() {
+    await test.step('Hover over the Unworked Tasks widget filter icon', async () => {
+      await expect(this.unworkedTasksFilterIcon).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.unworkedTasksFilterIcon.scrollIntoViewIfNeeded();
+      await this.unworkedTasksFilterIcon.hover();
+    });
+  }
+
+  async getUnworkedTasksFilterTooltipText() {
+    return test.step('Read the Unworked Tasks widget filter tooltip text', async () => {
+      await expect(this.tooltip).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      return (await this.tooltip.innerText()).trim();
+    });
+  }
+
+  async isUnworkedTasksFilterTooltipVisible() {
+    return test.step('Verify the Unworked Tasks widget filter tooltip is visible', async () => {
+      return this.tooltip.isVisible();
+    });
+  }
+
+  async hoverUnworkedTasksWidget() {
+    await test.step('Hover over the Unworked Tasks widget header area', async () => {
+      await expect(this.unworkedTasksWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.unworkedTasksWidget.scrollIntoViewIfNeeded();
+      await this.unworkedTasksWidget.hover();
+    });
+  }
+
+  // The Payer Category filter is a per-user preference that survives navigation and page
+  // reloads (see verifyDashboardRefreshClearsPayerCategoryFilter), and selectPayerCategory()
+  // toggles rather than sets. With workers: 1 and a shared storageState, a filter applied by
+  // one test leaks into the next, so tests that require an unfiltered Dashboard must reset first.
+  async resetPayerCategoryFilter() {
+    await test.step('Reset the Payer Category filter to its unfiltered state', async () => {
+      await expect(this.payerCategoriesDropDown).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+
+      if ((await this.filterIcons.count()) === 0) {
+        return;
+      }
+
+      await this.payerCategoriesDropDown.click();
+      await this.uncheckAllSelectedPayerCategories();
+
+      if (await this.applyBtn.isEnabled()) {
+        await this.applyBtn.click();
+      } else {
+        await this.closePayerCategoryDropdownByClickingOutside();
+      }
+
+      await expect(this.loadSpinner).toHaveCount(0, { timeout: settings.PAGE_LOAD_TIMEOUT });
+      await expect(this.filterIcons).toHaveCount(0, { timeout: settings.TIMEOUT });
+    });
+  }
+
+  async selectPayerCategoryOtherThan(excludedCategoryName) {
+    return test.step(`Select the first Payer Category option other than "${excludedCategoryName}"`, async () => {
+      await this.payerCategoriesDropDownOptions.first().waitFor({
+        state: 'visible',
+        timeout: settings.TIMEOUT,
+      });
+
+      const optionCount = await this.payerCategoriesDropDownOptions.count();
+      expect(optionCount, 'Payer Category dropdown should list at least one option').toBeGreaterThan(0);
+
+      for (let i = 0; i < optionCount; i++) {
+        const option = this.payerCategoriesDropDownOptions.nth(i);
+        const optionName = (await option.innerText()).trim();
+
+        if (optionName && optionName !== excludedCategoryName) {
+          await option.scrollIntoViewIfNeeded();
+          await option.click();
+          return optionName;
+        }
+      }
+
+      throw new Error(
+        `No Payer Category option other than "${excludedCategoryName}" is available to switch to`
+      );
     });
   }
 
