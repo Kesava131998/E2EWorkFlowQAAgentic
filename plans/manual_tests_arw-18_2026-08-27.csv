@@ -1,0 +1,75 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+1,AC1,Happy Path,High,Filter indicator displays on Task Updates widget when a Payer Category filter is applied,"User logged in and on the Dashboard page (/dashboard) with the Payer Category filter cleared","Payer Category = ""Income""","1. Verify the Dashboard page has finished loading (spinner hidden).
+2. Verify the Task Updates widget is visible on the Dashboard.
+3. Verify the Payer Category dropdown control is visible.
+4. Click the Payer Category dropdown to open it.
+5. Verify the ""Income"" option row is visible in the dropdown.
+6. Click the ""Income"" checkbox.
+7. Verify the Apply button is enabled.
+8. Click Apply.
+9. Verify the loading spinner is hidden after the filter is applied.
+10. Verify the Task Updates widget's filter icon is visible.","1. Dashboard is loaded (spinner not visible).
+2. Task Updates widget is displayed.
+3. Payer Category dropdown control is displayed.
+4. Dropdown panel opens and options are listed.
+5. ""Income"" option row is displayed.
+6. ""Income"" checkbox becomes checked.
+7. Apply button is enabled.
+8. Filter is submitted and dropdown closes.
+9. Spinner is hidden, widget data has refreshed.
+10. Filter icon is displayed on the Task Updates widget."
+2,AC1,Negative,Medium,Filter indicator does not display on Task Updates widget when no Payer Category filter is applied,"User logged in and on the Dashboard page with the Payer Category filter reset to its unfiltered state","None (no filter selected)","1. Verify the Dashboard page has finished loading (spinner hidden).
+2. Verify the Task Updates widget is visible.
+3. Verify the Payer Category dropdown shows no applied filter value.
+4. Verify the Task Updates widget's filter icon locator resolves to zero visible elements.","1. Dashboard is loaded.
+2. Task Updates widget is displayed.
+3. Payer Category dropdown displays its unfiltered/default state.
+4. No filter icon/indicator is shown on the Task Updates widget."
+3,AC2,Happy Path,High,Tooltip shows the applied Payer Category filter text on hover,"Payer Category filter is applied with a single category, e.g. ""Medicaid""","Payer Category = ""Medicaid""","1. Apply the ""Medicaid"" Payer Category filter as in TC1 (steps 4-9).
+2. Verify the Task Updates widget's filter icon is visible.
+3. Scroll the filter icon into view.
+4. Hover over the Task Updates widget's filter icon.
+5. Verify the tooltip becomes visible.
+6. Read the tooltip text.","1. Filter is applied and widget refreshes.
+2. Filter icon is visible.
+3. Filter icon is scrolled into the viewport.
+4. Hover triggers the tooltip to render.
+5. Tooltip is visible.
+6. Tooltip text reads ""Payer Category Filters (Medicaid)""."
+4,AC2,Edge Case,Medium,Tooltip reflects all selected categories when multiple Payer Categories are applied,"Payer Category dropdown is open with the filter reset to unfiltered","Two Payer Category options selected (e.g. first two available options)","1. Open the Payer Category dropdown.
+2. Select two Payer Category checkboxes.
+3. Click Apply.
+4. Verify the loading spinner is hidden.
+5. Hover over the Task Updates widget's filter icon.
+6. Verify the tooltip is visible.
+7. Read the tooltip text.","1. Dropdown panel opens.
+2. Both checkboxes become checked.
+3. Filter is submitted.
+4. Widget data refreshes.
+5. Hover triggers tooltip.
+6. Tooltip is visible.
+7. Tooltip text contains both selected category names."
+5,AC3,Happy Path,High,Filter indicator and tooltip update when the Payer Category filter is changed to a different category,"Payer Category filter is already applied with one category (e.g. ""Medicaid"")","Change filter from ""Medicaid"" to a different available category","1. Confirm the current tooltip text reflects ""Medicaid"".
+2. Open the Payer Category dropdown.
+3. Uncheck ""Medicaid"" and select a different available category.
+4. Click Apply.
+5. Verify the loading spinner is hidden.
+6. Hover over the Task Updates widget's filter icon.
+7. Verify the tooltip is visible.
+8. Read the tooltip text.","1. Tooltip initially shows ""Medicaid"".
+2. Dropdown opens.
+3. Previous category is unchecked, new category is checked.
+4. Filter is submitted.
+5. Widget data refreshes for the new filter.
+6. Hover triggers tooltip.
+7. Tooltip is visible.
+8. Tooltip text reflects the newly selected category, not ""Medicaid""."
+6,AC3,Happy Path,High,Filter indicator disappears and tooltip is cleared when the Payer Category filter is removed,"Payer Category filter is applied with at least one category","Remove/clear all selected Payer Category options","1. Open the Payer Category dropdown.
+2. Uncheck all currently selected Payer Category checkboxes.
+3. Click Apply (or close the dropdown if Apply is disabled with nothing selected).
+4. Verify the loading spinner is hidden.
+5. Verify the Task Updates widget's filter icon locator resolves to zero visible elements.","1. Dropdown opens.
+2. All checkboxes become unchecked.
+3. Filter is cleared and dropdown closes.
+4. Widget data refreshes to the unfiltered state.
+5. No filter icon/indicator remains on the Task Updates widget."

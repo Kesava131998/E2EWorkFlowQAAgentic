@@ -18,7 +18,7 @@ class SupDashboardPage extends BasePage {
     this.agingModuleCard = page.locator("(//div[@class='module-card'])[2]");
 
     // ── Dashboard root / spinner ─────────────────────────────────────────
-    this.dashboardPage = page.locator("//arw-dashboard[@class='arw-page ng-star-inserted']");
+    this.dashboardPage = page.locator("//arw-dashboard[contains(@class,'arw-page')]");
     this.loadSpinner = page.locator("//mat-spinner[@role='progressbar']");
 
     // ── Tasks Worked / Task Updates widgets ──────────────────────────────
@@ -28,6 +28,9 @@ class SupDashboardPage extends BasePage {
     this.taskWorkedAvatarToolpits = page.locator("//arw-tasks-worked-widget//arw-avatar");
     this.taskUpdateWidget = page.locator('//arw-task-updates-widget');
     this.taskUpdateCanvas = page.locator("//arw-task-updates-widget//canvas");
+    this.taskUpdatesFilterIcon = page.locator(
+      "//arw-task-updates-widget//arw-icon[@name='filterFunnel01']"
+    );
     this.timePeriod = page.locator("(//div[@class='mat-mdc-select-trigger'])[1]");
     this.timePeriodOptions = (days) => page.locator(`//div[normalize-space(text())='${days}']`);
     this.allTaskWorkedMartins = page.locator("//div[@class='flex gap-20 mt-8']");
@@ -77,6 +80,12 @@ class SupDashboardPage extends BasePage {
       "//arw-balance-status-widget//arw-icon[@name='filterFunnel01']"
     );
 
+    // ── Overdue Tasks widget (ARW-17) ─────────────────────────────────────
+    this.overdueTasksWidget = page.locator("//arw-overdue-tasks-widget");
+    this.overdueTasksFilterIcon = page.locator(
+      "//arw-overdue-tasks-widget//arw-icon[@name='filterFunnel01']"
+    );
+
 
     // ── Payer category dropdown / options ─────────────────────────────────
     this.payerCategoriesDropDownOptions = page.locator("//div[@class='cdk-virtual-scroll-content-wrapper ng-scroll-content']//span");
@@ -88,7 +97,7 @@ class SupDashboardPage extends BasePage {
     // sibling <div>, so filtering payerCategoryCheckboxes by hasText never matches. Locate the
     // row by its text instead, then scope the checkbox click/state check to that row.
     this.payerCategoryOptionRow = (categoryName) => page.locator(
-      `//div[contains(@class,'cdk-virtual-scroll-content-wrapper')]//div[contains(@class,'ng-star-inserted')][.//span[normalize-space()='${categoryName}']]`
+      `//div[contains(@class,'cdk-virtual-scroll-content-wrapper')]//div[contains(@class,'web-body-1')][.//span[normalize-space()='${categoryName}']]`
     ).first();
     this.payerCategoriesDropDown = page.locator("//arw-dashboard-header//arw-select-tree[@mode='dropdown']//button");
     this.appliedPayerCategoryValue = (tab) => tab.locator(
@@ -339,6 +348,137 @@ class SupDashboardPage extends BasePage {
     await test.step('Hover over the AR Status widget header area', async () => {
       await expect(this.arStatusWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
       await this.arStatusWidget.hover();
+    });
+  }
+
+  // ── Overdue Tasks widget filter indicator actions (ARW-17) ─────────────
+
+  async isOverdueTasksWidgetVisible() {
+    return test.step('Verify the Overdue Tasks widget is visible', async () => {
+      return this.overdueTasksWidget.isVisible();
+    });
+  }
+
+  async isOverdueTasksFilterIconVisible() {
+    return test.step('Verify the Overdue Tasks widget filter icon is visible', async () => {
+      return this.overdueTasksFilterIcon.isVisible();
+    });
+  }
+
+  async hoverOverdueTasksFilterIcon() {
+    await test.step('Hover over the Overdue Tasks widget filter icon', async () => {
+      await expect(this.overdueTasksFilterIcon).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.overdueTasksFilterIcon.scrollIntoViewIfNeeded();
+      await this.overdueTasksFilterIcon.hover();
+    });
+  }
+
+  async getOverdueTasksFilterTooltipText() {
+    return test.step('Read the Overdue Tasks widget filter tooltip text', async () => {
+      await expect(this.tooltip).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      return (await this.tooltip.innerText()).trim();
+    });
+  }
+
+  async isOverdueTasksFilterTooltipVisible() {
+    return test.step('Verify the Overdue Tasks widget filter tooltip is visible', async () => {
+      return this.tooltip.isVisible();
+    });
+  }
+
+  async hoverOverdueTasksWidget() {
+    await test.step('Hover over the Overdue Tasks widget header area', async () => {
+      await expect(this.overdueTasksWidget).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.overdueTasksWidget.scrollIntoViewIfNeeded();
+      await this.overdueTasksWidget.hover();
+    });
+  }
+
+  // ── Task Updates widget filter indicator actions (ARW-18) ──────────────
+
+  async isTaskUpdatesWidgetVisible() {
+    return test.step('Verify the Task Updates widget is visible', async () => {
+      return this.taskUpdateWidget.isVisible();
+    });
+  }
+
+  async isTaskUpdatesFilterIconVisible() {
+    return test.step('Verify the Task Updates widget filter icon is visible', async () => {
+      return this.taskUpdatesFilterIcon.isVisible();
+    });
+  }
+
+  async hoverTaskUpdatesFilterIcon() {
+    await test.step('Hover over the Task Updates widget filter icon', async () => {
+      await expect(this.taskUpdatesFilterIcon).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      await this.taskUpdatesFilterIcon.scrollIntoViewIfNeeded();
+      await this.taskUpdatesFilterIcon.hover();
+    });
+  }
+
+  async getTaskUpdatesFilterTooltipText() {
+    return test.step('Read the Task Updates widget filter tooltip text', async () => {
+      await expect(this.tooltip).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+      return (await this.tooltip.innerText()).trim();
+    });
+  }
+
+  async isTaskUpdatesFilterTooltipVisible() {
+    return test.step('Verify the Task Updates widget filter tooltip is visible', async () => {
+      return this.tooltip.isVisible();
+    });
+  }
+
+  // The Payer Category filter is a per-user preference that survives navigation and page
+  // reloads (see verifyDashboardRefreshClearsPayerCategoryFilter), and selectPayerCategory()
+  // toggles rather than sets. With workers: 1 and a shared storageState, a filter applied by
+  // one test leaks into the next, so tests that require an unfiltered Dashboard must reset first.
+  async resetPayerCategoryFilter() {
+    await test.step('Reset the Payer Category filter to its unfiltered state', async () => {
+      await expect(this.payerCategoriesDropDown).toBeVisible({ timeout: settings.PAGE_LOAD_TIMEOUT });
+
+      if ((await this.filterIcons.count()) === 0) {
+        return;
+      }
+
+      await this.payerCategoriesDropDown.click();
+      await this.uncheckAllSelectedPayerCategories();
+
+      if (await this.applyBtn.isEnabled()) {
+        await this.applyBtn.click();
+      } else {
+        await this.closePayerCategoryDropdownByClickingOutside();
+      }
+
+      await expect(this.loadSpinner).toHaveCount(0, { timeout: settings.PAGE_LOAD_TIMEOUT });
+      await expect(this.filterIcons).toHaveCount(0, { timeout: settings.TIMEOUT });
+    });
+  }
+
+  async selectPayerCategoryOtherThan(excludedCategoryName) {
+    return test.step(`Select the first Payer Category option other than "${excludedCategoryName}"`, async () => {
+      await this.payerCategoriesDropDownOptions.first().waitFor({
+        state: 'visible',
+        timeout: settings.TIMEOUT,
+      });
+
+      const optionCount = await this.payerCategoriesDropDownOptions.count();
+      expect(optionCount, 'Payer Category dropdown should list at least one option').toBeGreaterThan(0);
+
+      for (let i = 0; i < optionCount; i++) {
+        const option = this.payerCategoriesDropDownOptions.nth(i);
+        const optionName = (await option.innerText()).trim();
+
+        if (optionName && optionName !== excludedCategoryName) {
+          await option.scrollIntoViewIfNeeded();
+          await option.click();
+          return optionName;
+        }
+      }
+
+      throw new Error(
+        `No Payer Category option other than "${excludedCategoryName}" is available to switch to`
+      );
     });
   }
 

@@ -1,9 +1,11 @@
 require('dotenv').config();
+const fs = require('fs');
 const path = require('path');
 const { chromium } = require('@playwright/test');
 const { settings } = require('./config/settings');
 
 const STORAGE_STATE_PATH = path.join(__dirname, '.auth', 'state.json');
+const ALLURE_RESULTS_PATH = path.join(__dirname, 'reports', 'allure-results');
 
 /**
  * Logs in once via Azure AD SSO and persists the session so every test reuses it.
@@ -15,6 +17,12 @@ const STORAGE_STATE_PATH = path.join(__dirname, '.auth', 'state.json');
  * requires an active test context, which globalSetup does not have.
  */
 module.exports = async function globalSetup() {
+  // Playwright's HTML reporter wipes its output folder every run, but allure-playwright
+  // appends — so without this the Allure report shows every run ever while the HTML
+  // report shows only the latest. The npm `pretest` hook is not enough: it only fires
+  // for `npm test`, and both CLAUDE.md and CI invoke `npx playwright test` directly.
+  fs.rmSync(ALLURE_RESULTS_PATH, { recursive: true, force: true });
+
   const browser = await chromium.launch();
   const page = await browser.newPage();
 

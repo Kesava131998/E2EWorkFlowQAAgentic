@@ -1,0 +1,85 @@
+#,AC,Type,Priority,Scenario,Pre-conditions,Test Data,Steps,Expected Result
+1,AC1,Happy Path,High,"Overdue Tasks widget displays the filter icon/indicator when the Income Payer Category filter is applied","User is authenticated into RevFlow and on the Supervisor Dashboard; no Payer Category filter is currently applied","Payer Category = Income","1. Navigate to https://revflow-dev.axgsolutions.com/dashboard
+2. Wait for the Dashboard to finish loading and the loading spinner to disappear
+3. Verify the Payer Category filter dropdown control in the Dashboard header is visible
+4. Click the Payer Category filter dropdown control
+5. Type ""Income"" into the dropdown Search field
+6. Verify the Income option row is visible in the filtered options list
+7. Click the checkbox on the Income option row
+8. Click the Apply button
+9. Verify the Overdue Tasks widget is visible on the Dashboard
+10. Verify the filter icon/indicator on the Overdue Tasks widget","1. The Dashboard URL loads
+2. The Dashboard renders fully and no spinner remains visible
+3. The Payer Category filter dropdown control is visible
+4. The dropdown panel opens showing the Payer Category options list
+5. The options list narrows to entries matching ""Income""
+6. The Income option row is visible
+7. The Income checkbox becomes checked
+8. The dropdown closes and the Dashboard widgets reload with the Income filter applied
+9. The Overdue Tasks widget is visible
+10. The Overdue Tasks widget displays the filter (funnel) icon/indicator"
+2,AC1,Negative,High,"Overdue Tasks widget filter indicator does not display an applied filter when no Payer Category filter is applied","User is authenticated into RevFlow with access to the Supervisor Dashboard","None - no Payer Category filter selected","1. Navigate to https://revflow-dev.axgsolutions.com/dashboard
+2. Wait for the Dashboard to finish loading and the loading spinner to disappear
+3. Verify the Payer Category filter dropdown control shows no applied selection
+4. Verify the Overdue Tasks widget is visible on the Dashboard
+5. Check the Overdue Tasks widget for a filter icon/indicator","1. The Dashboard URL loads
+2. The Dashboard renders fully and no spinner remains visible
+3. The Payer Category filter control is in its default, unfiltered state
+4. The Overdue Tasks widget is visible
+5. The Overdue Tasks widget does not display a filter icon/indicator - no applied filter is shown"
+3,AC2,Happy Path,High,"A tooltip is displayed when the user hovers over the Overdue Tasks widget filter indicator","User is authenticated into RevFlow and on the Supervisor Dashboard","Payer Category = Income","1. Navigate to https://revflow-dev.axgsolutions.com/dashboard and wait for the Dashboard to finish loading
+2. Click the Payer Category filter dropdown control
+3. Type ""Income"" into the dropdown Search field and click the checkbox on the Income option row
+4. Click the Apply button
+5. Verify the filter icon/indicator on the Overdue Tasks widget is visible
+6. Hover the mouse over the Overdue Tasks widget filter icon/indicator
+7. Verify a tooltip is displayed","1. The Dashboard renders fully with all widgets loaded
+2. The Payer Category dropdown panel opens
+3. The Income checkbox becomes checked
+4. The dropdown closes and the Dashboard widgets reload with the Income filter applied
+5. The Overdue Tasks widget filter icon/indicator is visible
+6. The pointer rests on the Overdue Tasks widget filter icon/indicator
+7. A tooltip overlay is displayed next to the filter indicator"
+4,AC2,Happy Path,High,"The Overdue Tasks widget tooltip shows ""Payer Category Filters (Income)""","User is authenticated into RevFlow and on the Supervisor Dashboard","Payer Category = Income; expected tooltip text = Payer Category Filters (Income)","1. Navigate to https://revflow-dev.axgsolutions.com/dashboard and wait for the Dashboard to finish loading
+2. Click the Payer Category filter dropdown control
+3. Type ""Income"" into the dropdown Search field and click the checkbox on the Income option row
+4. Click the Apply button
+5. Hover the mouse over the Overdue Tasks widget filter icon/indicator
+6. Read the text displayed in the tooltip","1. The Dashboard renders fully with all widgets loaded
+2. The Payer Category dropdown panel opens
+3. The Income checkbox becomes checked
+4. The dropdown closes and the Dashboard widgets reload with the Income filter applied
+5. A tooltip overlay is displayed next to the filter indicator
+6. The tooltip text reads ""Payer Category Filters (Income)"""
+5,AC3,Happy Path,High,"Overdue Tasks widget filter indicator and tooltip reflect the current filter after the Payer Category filter is changed","User is authenticated into RevFlow and on the Supervisor Dashboard","Initially applied: Income; changed to a different available Payer Category","1. Navigate to https://revflow-dev.axgsolutions.com/dashboard and wait for the Dashboard to finish loading
+2. Apply the Payer Category filter with Income selected and click Apply
+3. Hover the Overdue Tasks widget filter icon/indicator and read the tooltip text
+4. Re-open the Payer Category filter dropdown
+5. Uncheck the Income option row
+6. Select a different available Payer Category option row
+7. Click the Apply button
+8. Verify the Overdue Tasks widget filter icon/indicator is still displayed
+9. Hover the Overdue Tasks widget filter icon/indicator and read the tooltip text","1. The Dashboard renders fully with all widgets loaded
+2. Income is applied and the Overdue Tasks filter indicator is displayed
+3. The tooltip shows ""Payer Category Filters (Income)""
+4. The Payer Category dropdown panel re-opens with Income still checked
+5. The Income checkbox becomes unchecked
+6. The newly chosen category checkbox becomes checked
+7. The dropdown closes and the Dashboard widgets reload with the new filter applied
+8. The Overdue Tasks widget filter icon/indicator remains displayed
+9. The tooltip reflects the newly applied Payer Category and no longer shows ""Income"""
+6,AC3,Happy Path,High,"Overdue Tasks widget filter indicator and tooltip reflect no applied filter after the Payer Category filter is removed","User is authenticated into RevFlow and on the Supervisor Dashboard","Applied then removed: Income","1. Navigate to https://revflow-dev.axgsolutions.com/dashboard and wait for the Dashboard to finish loading
+2. Apply the Payer Category filter with Income selected and click Apply
+3. Verify the Overdue Tasks widget filter icon/indicator is displayed
+4. Re-open the Payer Category filter dropdown
+5. Type ""Income"" into the Search field and uncheck the Income option row
+6. Click the Apply button
+7. Check the Overdue Tasks widget for a filter icon/indicator
+8. Hover over the Overdue Tasks widget header area and check for a filter tooltip","1. The Dashboard renders fully with all widgets loaded
+2. Income is applied and the Dashboard widgets reload
+3. The Overdue Tasks widget filter icon/indicator is displayed
+4. The Payer Category dropdown panel re-opens with Income still checked
+5. The Income checkbox becomes unchecked
+6. The dropdown closes and the Dashboard widgets reload with no Payer Category filter applied
+7. The Overdue Tasks widget no longer displays a filter icon/indicator
+8. No Payer Category filter tooltip is displayed"
