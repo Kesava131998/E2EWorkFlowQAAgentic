@@ -16,7 +16,19 @@ module.exports = defineConfig({
   globalSetup: require.resolve('./global-setup.js'),
   reporter: [
     ['html', { outputFolder: 'reports/html', open: 'never' }],
-    ['allure-playwright', { outputFolder: 'reports/allure-results' }],
+    // allure-playwright v3 reads `resultsDir` — the v2 `outputFolder` key is ignored
+    // and silently falls back to ./allure-results, which the allure:* scripts don't read.
+    ['allure-playwright', {
+      resultsDir: 'reports/allure-results',
+      // The HTML report embeds run metadata in its UI; Allure needs it supplied.
+      environmentInfo: {
+        baseURL: process.env.BASE_URL || 'https://revflow-dev.axgsolutions.com',
+        headless: process.env.HEADLESS || 'true',
+        workers: process.env.WORKERS || '1',
+        node: process.version,
+        environment: process.env.CI ? 'ci' : 'local',
+      },
+    }],
     ['list'],
   ],
   use: {
