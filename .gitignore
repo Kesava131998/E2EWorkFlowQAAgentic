@@ -18,6 +18,8 @@ test-results/
 .auth/
 reports/allure-results/
 reports/allure-report/
+# legacy fallback dir written when the reporter's resultsDir is misconfigured
+/allure-results/
 reports/allure-html/
 reports/html/
 reports/heal_summary.md
@@ -26,6 +28,9 @@ screenshots/
 
 # Runtime-generated MCP config
 .mcp.headed.json
+
+# Contains live credentials (GitHub PAT, Jira API token) — must never be committed
+.mcp.json
 
 # Playwright MCP page snapshots
 .playwright-mcp/
